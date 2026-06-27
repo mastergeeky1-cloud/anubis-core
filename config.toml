@@ -1,0 +1,29 @@
+[telegram]
+# Override with TELEGRAM_BOT_TOKEN env var
+token = ""
+
+[tts]
+# Path to piper binary (https://github.com/rhasspy/piper)
+piper_binary = "piper"
+# Directory containing <lang>/<voice_id>.onnx model files
+voices_dir = "./voices"
+
+[clone]
+# Local XTTS-v2 server (https://github.com/daswer123/xtts-api-server)
+xtts_url = "http://127.0.0.1:8020"
+# Directory where cloned voice WAV samples are stored
+clones_dir = "./clones"
+# Set false to disable cloning (TTS-only mode)
+enabled = true
+
+[database]
+path = "./anubis.db"
+
+[limits]
+max_audio_duration_secs = 60
+max_text_chars          = 500
+free_daily_credits      = 3
+
+[audio]
+# Temporary and output directory for audio processing
+output_dir = "./audio_output"

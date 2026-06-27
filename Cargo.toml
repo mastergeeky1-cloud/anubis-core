@@ -1,0 +1,60 @@
+[package]
+name = "anubis"
+version = "0.3.0"
+edition = "2021"
+
+[[bin]]
+name = "anubis"
+path = "src/main.rs"
+
+[dependencies]
+# ── async runtime ──────────────────────────────────────────────────────────
+tokio              = { version = "1",    features = ["full"] }
+futures            = "0.3"
+
+# ── telegram ───────────────────────────────────────────────────────────────
+teloxide           = { version = "0.12", features = ["macros"] }
+
+# ── database ───────────────────────────────────────────────────────────────
+rusqlite           = { version = "0.31", features = ["bundled"] }
+r2d2               = "0.8"
+r2d2_sqlite        = "0.24"
+
+# ── serialisation ──────────────────────────────────────────────────────────
+serde              = { version = "1",    features = ["derive"] }
+serde_json         = "1"
+toml               = "0.8"
+
+# ── error handling ─────────────────────────────────────────────────────────
+anyhow             = "1"
+thiserror          = "2"
+
+# ── http client ────────────────────────────────────────────────────────────
+reqwest            = { version = "0.11", features = ["json", "multipart", "stream"] }
+
+# ── logging ────────────────────────────────────────────────────────────────
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3",  features = ["env-filter"] }
+
+# ── utilities ──────────────────────────────────────────────────────────────
+uuid               = { version = "1",    features = ["v4"] }
+async-trait        = "0.1"
+dotenvy            = "0.15"
+chrono             = "0.4"
+bytes              = "1"
+
+# ── concurrency ────────────────────────────────────────────────────────────
+dashmap            = "6"
+
+# ── caching ────────────────────────────────────────────────────────────────
+lru                = "0.12"
+xxhash-rust        = { version = "0.8", features = ["xxh64"] }
+
+# ── audio (pure-Rust WAV I/O + effects) ───────────────────────────────────
+hound              = "3.5"
+
+[profile.release]
+opt-level     = 3
+lto           = true
+codegen-units = 1
+strip         = true
