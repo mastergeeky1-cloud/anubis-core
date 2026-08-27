@@ -3,6 +3,8 @@ use std::num::NonZeroUsize;
 use std::sync::Mutex;
 use xxhash_rust::xxh64::xxh64;
 
+/// LRU cache of synthesized audio keyed by (text + voice). Avoids paying for
+/// repeated synthesis. Thread-safe via a Mutex.
 pub struct AudioCache {
     inner: Mutex<LruCache<u64, Vec<u8>>>,
 }
@@ -15,6 +17,7 @@ impl AudioCache {
         }
     }
 
+    /// Stable, fast key from text + voice id.
     pub fn make_key(text: &str, voice_id: &str) -> u64 {
         let mut data = Vec::with_capacity(text.len() + voice_id.len() + 1);
         data.extend_from_slice(text.as_bytes());

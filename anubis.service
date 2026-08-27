@@ -1,0 +1,21 @@
+[Unit]
+Description=ANUBIS Core — local-first open-source voice bot
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/anubis-core
+ExecStart=/home/ubuntu/anubis-core/target/release/anubis
+# Secrets via EnvironmentFile — never put the token in this file.
+EnvironmentFile=/home/ubuntu/anubis-core/.env
+Restart=on-failure
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/ubuntu/anubis-core
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

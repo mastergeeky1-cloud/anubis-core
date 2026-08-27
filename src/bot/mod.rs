@@ -4,9 +4,10 @@ pub mod keyboards;
 
 use crate::audio::AudioProcessor;
 use crate::cache::AudioCache;
-use crate::clone::{F5Cloner, XttsCloner};
+use crate::clone::ChatterboxCloner;
 use crate::config::Config;
 use crate::db::Database;
+use crate::noxis::NoxisCore;
 use crate::security::{RateLimiter, Watermarker};
 use crate::tts::router::TtsRouter;
 use dashmap::DashMap;
@@ -21,16 +22,16 @@ pub enum PendingAction {
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db:           Arc<Database>,
-    pub tts:          Arc<TtsRouter>,
-    pub clone_engine: Arc<XttsCloner>,
-    pub f5_cloner:    Arc<F5Cloner>,
-    pub audio:        Arc<AudioProcessor>,
-    pub config:       Arc<Config>,
-    pub pending:      Arc<DashMap<i64, PendingAction>>,
+    pub db: Arc<Database>,
+    pub tts: Arc<TtsRouter>,
+    pub clone_engine: Arc<ChatterboxCloner>,
+    pub noxis: Arc<NoxisCore>,
+    pub audio: Arc<AudioProcessor>,
+    pub config: Arc<Config>,
+    pub pending: Arc<DashMap<i64, PendingAction>>,
     pub rate_limiter: Arc<RateLimiter>,
-    pub cache:        Arc<AudioCache>,
-    pub watermark:    Arc<Watermarker>,
+    pub cache: Arc<AudioCache>,
+    pub watermark: Arc<Watermarker>,
 }
 
 pub async fn run(state: AppState) -> anyhow::Result<()> {
@@ -38,7 +39,6 @@ pub async fn run(state: AppState) -> anyhow::Result<()> {
     use handlers::{handle_callback, handle_command, handle_message};
 
     let bot = Bot::new(state.config.telegram.token.clone());
-
     bot.set_my_commands(Command::bot_commands()).await?;
 
     let handler = dptree::entry()
@@ -52,11 +52,9 @@ pub async fn run(state: AppState) -> anyhow::Result<()> {
                 ),
         )
         .branch(
-            Update::filter_message().endpoint(
-                |bot: Bot, msg: Message, st: AppState| async move {
-                    handle_message(bot, msg, st).await
-                },
-            ),
+            Update::filter_message().endpoint(|bot: Bot, msg: Message, st: AppState| async move {
+                handle_message(bot, msg, st).await
+            }),
         )
         .branch(
             Update::filter_callback_query().endpoint(
@@ -69,7 +67,9 @@ pub async fn run(state: AppState) -> anyhow::Result<()> {
     Dispatcher::builder(bot, handler)
         .dependencies(dptree::deps![state])
         .default_handler(|_| async {})
-        .error_handler(LoggingErrorHandler::with_custom_text("ANUBIS dispatcher error"))
+        .error_handler(LoggingErrorHandler::with_custom_text(
+            "ANUBIS dispatcher error",
+        ))
         .enable_ctrlc_handler()
         .build()
         .dispatch()

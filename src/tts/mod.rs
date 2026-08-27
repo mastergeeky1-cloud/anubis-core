@@ -1,4 +1,5 @@
 pub mod engine;
+pub mod kokoro;
 pub mod presets;
 pub mod router;
 pub mod voices;
@@ -10,8 +11,9 @@ use std::path::{Path, PathBuf};
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
+/// Piper local TTS engine. Pure CPU, fast, MIT-licensed models.
 pub struct PiperTts {
-    binary:     String,
+    binary: String,
     voices_dir: PathBuf,
 }
 
@@ -24,7 +26,9 @@ impl PiperTts {
     }
 
     fn model_path(&self, voice_id: &str, lang: &str) -> PathBuf {
-        self.voices_dir.join(lang).join(format!("{}.onnx", voice_id))
+        self.voices_dir
+            .join(lang)
+            .join(format!("{}.onnx", voice_id))
     }
 }
 
@@ -44,7 +48,6 @@ impl TtsEngine for PiperTts {
     async fn synthesize_wav(&self, text: &str, voice_id: &str) -> Result<PathBuf> {
         let meta = voices::find(voice_id)
             .ok_or_else(|| AnubisError::VoiceNotFound(voice_id.to_string()))?;
-
         let model_path = self.model_path(voice_id, meta.lang);
         if !model_path.exists() {
             return Err(AnubisError::Tts(format!(
@@ -52,9 +55,7 @@ impl TtsEngine for PiperTts {
                 model_path.display()
             )));
         }
-
         let wav_out = std::env::temp_dir().join(format!("{}.wav", uuid::Uuid::new_v4()));
-
         let mut child = Command::new(&self.binary)
             .args([
                 "--model",
@@ -78,20 +79,16 @@ impl TtsEngine for PiperTts {
                 .await
                 .map_err(|e| AnubisError::Tts(format!("stdin shutdown: {e}")))?;
         }
-
         let status = child
             .wait()
             .await
             .map_err(|e| AnubisError::Tts(format!("piper wait: {e}")))?;
-
         if !status.success() {
             return Err(AnubisError::Tts("piper exited with non-zero status".into()));
         }
-
         if !wav_out.exists() {
             return Err(AnubisError::Tts("piper did not produce output file".into()));
         }
-
         Ok(wav_out)
     }
 }

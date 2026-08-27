@@ -3,8 +3,8 @@ use crate::tts::engine::TtsEngine;
 use crate::tts::voices::VoiceMeta;
 use std::path::PathBuf;
 
-/// Routes synthesis requests across a chain of TTS engines.
-/// Tries each engine in order; the first one that has the requested voice is used.
+/// Routes synthesis requests across a chain of TTS engines (Piper + Kokoro).
+/// Tries each engine in order; the first one that has the requested voice wins.
 pub struct TtsRouter {
     engines: Vec<Box<dyn TtsEngine>>,
 }
@@ -28,15 +28,12 @@ impl TtsRouter {
         all
     }
 
-    /// Synthesize with the first engine that reports `voice_id` as available.
-    /// Falls back to the first engine if none claim it (lets the engine produce its own error).
     pub async fn synthesize_wav(&self, text: &str, voice_id: &str) -> Result<PathBuf> {
         for engine in &self.engines {
             if engine.available_voices().iter().any(|v| v.id == voice_id) {
                 return engine.synthesize_wav(text, voice_id).await;
             }
         }
-        // fallback: let the primary engine handle unknown voice (will return VoiceNotFound)
         self.engines[0].synthesize_wav(text, voice_id).await
     }
 }

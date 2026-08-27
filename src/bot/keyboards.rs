@@ -3,7 +3,7 @@ use crate::tts::presets::PRESETS;
 use crate::tts::voices;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
-/// Language selector keyboard — two buttons per row.
+/// Language selector — two buttons per row.
 pub fn lang_keyboard() -> InlineKeyboardMarkup {
     let buttons: Vec<Vec<InlineKeyboardButton>> = LANGUAGES
         .chunks(2)
@@ -16,16 +16,14 @@ pub fn lang_keyboard() -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new(buttons)
 }
 
-/// Voice selector keyboard filtered by language.
+/// Voice selector filtered by language.
 pub fn voices_keyboard(lang: &str, installed: &[&voices::VoiceMeta]) -> InlineKeyboardMarkup {
     let lang_voices: Vec<_> = installed.iter().filter(|v| v.lang == lang).collect();
-
     let source: Vec<_> = if lang_voices.is_empty() {
         installed.iter().collect()
     } else {
         lang_voices
     };
-
     let buttons: Vec<Vec<InlineKeyboardButton>> = source
         .iter()
         .map(|v| {
@@ -36,11 +34,10 @@ pub fn voices_keyboard(lang: &str, installed: &[&voices::VoiceMeta]) -> InlineKe
             )]
         })
         .collect();
-
     InlineKeyboardMarkup::new(buttons)
 }
 
-/// Voice presets keyboard — one button per preset.
+/// Voice presets — one button per preset.
 pub fn presets_keyboard() -> InlineKeyboardMarkup {
     let buttons: Vec<Vec<InlineKeyboardButton>> = PRESETS
         .chunks(2)
@@ -53,7 +50,7 @@ pub fn presets_keyboard() -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new(buttons)
 }
 
-/// Clones management keyboard — one Delete button per clone.
+/// Clones management — one Delete button per clone.
 pub fn clones_keyboard(clones: &[crate::db::VoiceClone]) -> InlineKeyboardMarkup {
     let buttons: Vec<Vec<InlineKeyboardButton>> = clones
         .iter()
@@ -67,10 +64,10 @@ pub fn clones_keyboard(clones: &[crate::db::VoiceClone]) -> InlineKeyboardMarkup
     InlineKeyboardMarkup::new(buttons)
 }
 
-/// Consent prompt keyboard.
+/// Consent prompt.
 pub fn consent_keyboard() -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new(vec![vec![
         InlineKeyboardButton::callback("I Agree", "consent:yes"),
-        InlineKeyboardButton::callback("Cancel",  "consent:no"),
+        InlineKeyboardButton::callback("Cancel", "consent:no"),
     ]])
 }

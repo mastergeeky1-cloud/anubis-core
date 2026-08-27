@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use tokio::process::Command;
 use uuid::Uuid;
 
+/// Local audio processing: WAV <-> OGG (Opus) via ffmpeg, plus duration probe.
+/// Pure local; no network. Requires `ffmpeg`/`ffprobe` on PATH.
 pub struct AudioProcessor {
     pub output_dir: PathBuf,
 }
@@ -18,7 +20,7 @@ impl AudioProcessor {
         self.output_dir.join(format!("{}.{}", Uuid::new_v4(), ext))
     }
 
-    /// WAV path → OGG Opus bytes ready for Telegram send_voice.
+    /// WAV path -> OGG Opus bytes ready for Telegram send_voice.
     pub async fn wav_to_ogg(&self, wav_path: &Path) -> Result<Vec<u8>> {
         let out = self.tmp_path("ogg");
         let status = Command::new("ffmpeg")
@@ -38,21 +40,18 @@ impl AudioProcessor {
             .await?;
 
         if !status.success() {
-            return Err(AnubisError::Audio("ffmpeg wav→ogg failed".into()));
+            return Err(AnubisError::Audio("ffmpeg wav->ogg failed".into()));
         }
-
         let bytes = tokio::fs::read(&out).await?;
         tokio::fs::remove_file(&out).await.ok();
         Ok(bytes)
     }
 
-    /// OGG/Opus bytes → WAV path (caller must delete after use).
+    /// OGG/Opus bytes -> WAV path (caller must delete after use).
     pub async fn ogg_to_wav(&self, ogg_bytes: &[u8]) -> Result<PathBuf> {
         let inp = self.tmp_path("ogg");
         let out = self.tmp_path("wav");
-
         tokio::fs::write(&inp, ogg_bytes).await?;
-
         let status = Command::new("ffmpeg")
             .args([
                 "-y",
@@ -69,21 +68,17 @@ impl AudioProcessor {
             .stderr(std::process::Stdio::null())
             .status()
             .await?;
-
         tokio::fs::remove_file(&inp).await.ok();
-
         if !status.success() {
-            return Err(AnubisError::Audio("ffmpeg ogg→wav failed".into()));
+            return Err(AnubisError::Audio("ffmpeg ogg->wav failed".into()));
         }
-
         Ok(out)
     }
 
-    #[allow(dead_code)]
+    /// Seconds of audio (for validation/limits).
     pub async fn duration_secs(&self, bytes: &[u8], ext: &str) -> Result<f64> {
         let inp = self.tmp_path(ext);
         tokio::fs::write(&inp, bytes).await?;
-
         let out = Command::new("ffprobe")
             .args([
                 "-v",
@@ -96,9 +91,7 @@ impl AudioProcessor {
             ])
             .output()
             .await?;
-
         tokio::fs::remove_file(&inp).await.ok();
-
         let raw = String::from_utf8_lossy(&out.stdout);
         raw.trim()
             .parse::<f64>()

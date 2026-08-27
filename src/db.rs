@@ -16,24 +16,24 @@ unsafe impl Sync for Database {}
 
 #[derive(Debug, Clone)]
 pub struct User {
-    pub id:           i64,
-    pub username:     Option<String>,
-    pub lang:         String,
-    pub credits:      i32,
-    pub daily_used:   i32,
-    pub daily_reset:  String,
+    pub id: i64,
+    pub username: Option<String>,
+    pub lang: String,
+    pub credits: i32,
+    pub daily_used: i32,
+    pub daily_reset: String,
     pub active_voice: String,
-    pub consent_at:   Option<String>,
-    pub banned:       bool,
+    pub consent_at: Option<String>,
+    pub banned: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct VoiceClone {
-    pub id:         String,
-    pub user_id:    i64,
-    pub name:       String,
-    pub wav_path:   String,
-    pub ref_text:   String,
+    pub id: String,
+    pub user_id: i64,
+    pub name: String,
+    pub wav_path: String,
+    pub ref_text: String,
     pub created_at: String,
 }
 
@@ -70,8 +70,17 @@ CREATE TABLE IF NOT EXISTS credit_log (
     created_at TEXT    NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS audit_log (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts         TEXT    NOT NULL,
+    user_id    INTEGER NOT NULL,
+    action     TEXT    NOT NULL,
+    detail     TEXT    NOT NULL DEFAULT ''
+);
+
 CREATE INDEX IF NOT EXISTS idx_clones_user     ON voice_clones(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_log_user ON credit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_user      ON audit_log(user_id);
 ";
 
 impl Database {
@@ -91,7 +100,15 @@ impl Database {
         self.pool.get().map_err(AnubisError::from)
     }
 
-    // ── users ──────────────────────────────────────────────────────────────
+    /// Append-only security/audit trail.
+    pub fn audit(&self, user_id: i64, action: &str, detail: &str) {
+        if let Ok(c) = self.conn() {
+            let _ = c.execute(
+                "INSERT INTO audit_log (ts, user_id, action, detail) VALUES (?1, ?2, ?3, ?4)",
+                params![Utc::now().to_rfc3339(), user_id, action, detail],
+            );
+        }
+    }
 
     pub fn upsert_user(&self, id: i64, username: Option<&str>) -> Result<()> {
         let c = self.conn()?;
@@ -112,15 +129,15 @@ impl Database {
         )?;
         let res = stmt.query_row(params![id], |r| {
             Ok(User {
-                id:           r.get(0)?,
-                username:     r.get(1)?,
-                lang:         r.get(2)?,
-                credits:      r.get(3)?,
-                daily_used:   r.get(4)?,
-                daily_reset:  r.get(5)?,
+                id: r.get(0)?,
+                username: r.get(1)?,
+                lang: r.get(2)?,
+                credits: r.get(3)?,
+                daily_used: r.get(4)?,
+                daily_reset: r.get(5)?,
                 active_voice: r.get(6)?,
-                consent_at:   r.get(7)?,
-                banned:       r.get::<_, i32>(8)? != 0,
+                consent_at: r.get(7)?,
+                banned: r.get::<_, i32>(8)? != 0,
             })
         });
         match res {
@@ -132,7 +149,10 @@ impl Database {
 
     pub fn set_lang(&self, user_id: i64, lang: &str) -> Result<()> {
         let c = self.conn()?;
-        c.execute("UPDATE users SET lang = ?1 WHERE id = ?2", params![lang, user_id])?;
+        c.execute(
+            "UPDATE users SET lang = ?1 WHERE id = ?2",
+            params![lang, user_id],
+        )?;
         Ok(())
     }
 
@@ -185,20 +205,16 @@ impl Database {
         Ok(())
     }
 
-    // ── credits ────────────────────────────────────────────────────────────
-
-    /// Deduct one generation credit. Returns false when balance is zero.
     pub fn consume_credit(&self, user_id: i64, free_daily: i32, unlimited: bool) -> Result<bool> {
         if unlimited {
             return Ok(true);
         }
         let user = match self.get_user(user_id)? {
             Some(u) => u,
-            None    => return Ok(false),
+            None => return Ok(false),
         };
         let today = Utc::now().date_naive().to_string();
         let c = self.conn()?;
-
         let daily_used = if user.daily_reset != today {
             c.execute(
                 "UPDATE users SET daily_used = 0, daily_reset = ?1 WHERE id = ?2",
@@ -208,7 +224,6 @@ impl Database {
         } else {
             user.daily_used
         };
-
         if daily_used < free_daily {
             c.execute(
                 "UPDATE users SET daily_used = daily_used + 1 WHERE id = ?1",
@@ -246,37 +261,29 @@ impl Database {
     ) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         c.execute(
-            "INSERT INTO credit_log (user_id, delta, reason, created_at)
-             VALUES (?1, ?2, ?3, ?4)",
+            "INSERT INTO credit_log (user_id, delta, reason, created_at) VALUES (?1, ?2, ?3, ?4)",
             params![user_id, delta, reason, now],
         )?;
         Ok(())
     }
 
-    // ── stats ──────────────────────────────────────────────────────────────
-
     pub fn stats(&self) -> Result<(i64, i64)> {
         let c = self.conn()?;
         let users: i64 = c.query_row("SELECT COUNT(*) FROM users", [], |r| r.get(0))?;
-        let gens: i64  = c.query_row(
+        let gens: i64 = c.query_row(
             "SELECT COALESCE(SUM(ABS(delta)), 0) FROM credit_log WHERE delta < 0",
-            [], |r| r.get(0),
+            [],
+            |r| r.get(0),
         )?;
         Ok((users, gens))
     }
 
-    // ── voice clones ───────────────────────────────────────────────────────
-
     pub fn save_clone(&self, clone: &VoiceClone) -> Result<()> {
         let c = self.conn()?;
         c.execute(
-            "INSERT OR REPLACE INTO voice_clones
-             (id, user_id, name, wav_path, ref_text, created_at)
+            "INSERT OR REPLACE INTO voice_clones (id, user_id, name, wav_path, ref_text, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![
-                clone.id, clone.user_id, clone.name,
-                clone.wav_path, clone.ref_text, clone.created_at
-            ],
+            params![clone.id, clone.user_id, clone.name, clone.wav_path, clone.ref_text, clone.created_at],
         )?;
         Ok(())
     }
@@ -290,11 +297,11 @@ impl Database {
         let rows = stmt
             .query_map(params![user_id], |r| {
                 Ok(VoiceClone {
-                    id:         r.get(0)?,
-                    user_id:    r.get(1)?,
-                    name:       r.get(2)?,
-                    wav_path:   r.get(3)?,
-                    ref_text:   r.get(4)?,
+                    id: r.get(0)?,
+                    user_id: r.get(1)?,
+                    name: r.get(2)?,
+                    wav_path: r.get(3)?,
+                    ref_text: r.get(4)?,
                     created_at: r.get(5)?,
                 })
             })?
@@ -310,16 +317,16 @@ impl Database {
         )?;
         let res = stmt.query_row(params![user_id], |r| {
             Ok(VoiceClone {
-                id:         r.get(0)?,
-                user_id:    r.get(1)?,
-                name:       r.get(2)?,
-                wav_path:   r.get(3)?,
-                ref_text:   r.get(4)?,
+                id: r.get(0)?,
+                user_id: r.get(1)?,
+                name: r.get(2)?,
+                wav_path: r.get(3)?,
+                ref_text: r.get(4)?,
                 created_at: r.get(5)?,
             })
         });
         match res {
-            Ok(c)  => Ok(Some(c)),
+            Ok(c) => Ok(Some(c)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }

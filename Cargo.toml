@@ -1,7 +1,9 @@
 [package]
 name = "anubis"
-version = "0.3.0"
+version = "2.0.0"
 edition = "2021"
+description = "ANUBIS Core — local-first, open-source, bare-metal voice AI in Rust"
+license = "MIT"
 
 [[bin]]
 name = "anubis"
@@ -15,7 +17,7 @@ futures            = "0.3"
 # ── telegram ───────────────────────────────────────────────────────────────
 teloxide           = { version = "0.12", features = ["macros"] }
 
-# ── database ───────────────────────────────────────────────────────────────
+# ── database (local SQLite, no external services) ───────────────────────────
 rusqlite           = { version = "0.31", features = ["bundled"] }
 r2d2               = "0.8"
 r2d2_sqlite        = "0.24"
@@ -29,7 +31,7 @@ toml               = "0.8"
 anyhow             = "1"
 thiserror          = "2"
 
-# ── http client ────────────────────────────────────────────────────────────
+# ── http client (talks to LOCAL sidecars: llama.cpp, Chatterbox) ────────────
 reqwest            = { version = "0.11", features = ["json", "multipart", "stream"] }
 
 # ── logging ────────────────────────────────────────────────────────────────

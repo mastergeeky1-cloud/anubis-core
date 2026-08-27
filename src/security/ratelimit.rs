@@ -2,14 +2,15 @@ use dashmap::DashMap;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RateKind {
     Speak,
     Clone,
 }
 
 pub struct RateLimiter {
-    speak_max:     u32,
-    clone_max:     u32,
+    speak_max: u32,
+    clone_max: u32,
     speak_windows: DashMap<i64, VecDeque<Instant>>,
     clone_windows: DashMap<i64, VecDeque<Instant>>,
 }
@@ -17,15 +18,14 @@ pub struct RateLimiter {
 impl RateLimiter {
     pub fn new(speak_per_min: u32, clone_per_hr: u32) -> Self {
         Self {
-            speak_max:     speak_per_min,
-            clone_max:     clone_per_hr,
+            speak_max: speak_per_min.max(1),
+            clone_max: clone_per_hr.max(1),
             speak_windows: DashMap::new(),
             clone_windows: DashMap::new(),
         }
     }
 
-    /// Returns `true` if the action is allowed and records it.
-    /// Returns `false` when the rate limit is exceeded.
+    /// Returns true if the action is allowed (and is recorded).
     pub fn check(&self, user_id: i64, kind: RateKind) -> bool {
         match kind {
             RateKind::Speak => self.check_window(
@@ -53,16 +53,16 @@ impl RateLimiter {
         let now = Instant::now();
         let mut entry = map.entry(user_id).or_default();
         let deque = entry.value_mut();
-
-        // Remove timestamps outside the current window
-        while deque.front().map(|t| now.duration_since(*t) > window).unwrap_or(false) {
+        while deque
+            .front()
+            .map(|t| now.duration_since(*t) > window)
+            .unwrap_or(false)
+        {
             deque.pop_front();
         }
-
         if deque.len() as u32 >= max {
             return false;
         }
-
         deque.push_back(now);
         true
     }

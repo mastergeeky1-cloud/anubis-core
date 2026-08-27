@@ -1,0 +1,24 @@
+# Build artifacts (never commit — this repo was bloated with 1.7GB of target/)
+/target/
+**/*.rs.bk
+
+# Local data / runtime secrets
+*.db
+*.db-wal
+*.db-shm
+/clones/
+/voices/
+/audio_output/
+.env
+config.local.toml
+
+# Local model weights / binaries (download via setup script)
+/models/
+*.onnx
+*.gguf
+piper
+piper.exe
+
+# OS / editor
+.DS_Store
+*.swp

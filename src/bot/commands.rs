@@ -12,6 +12,9 @@ pub enum Command {
     #[command(description = "Generate speech: /speak <text>")]
     Speak(String),
 
+    #[command(description = "Ask the local Noxis Core brain: /ask <text>")]
+    Ask(String),
+
     #[command(description = "Speak in your cloned voice: /myvoice <text>")]
     Myvoice(String),
 

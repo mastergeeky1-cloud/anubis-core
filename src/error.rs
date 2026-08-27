@@ -8,6 +8,9 @@ pub enum AnubisError {
     #[error("db pool: {0}")]
     Pool(String),
 
+    #[error("LLM (Noxis Core) failed: {0}")]
+    Llm(String),
+
     #[error("TTS failed: {0}")]
     Tts(String),
 
