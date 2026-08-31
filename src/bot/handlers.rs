@@ -59,7 +59,10 @@ where
 {
     let spinners = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
     let stages: Vec<String> = stages.iter().map(|s| s.to_string()).collect();
-    let label = stages.first().cloned().unwrap_or_else(|| "Working".to_string());
+    let label = stages
+        .first()
+        .cloned()
+        .unwrap_or_else(|| "Working".to_string());
     let mut tick = 0usize;
     let mut last = String::new();
     let handle = {
