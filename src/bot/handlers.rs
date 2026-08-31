@@ -38,6 +38,15 @@ fn user_voice(state: &AppState, user_id: i64, lang: &str) -> String {
         .map(|u| u.active_voice)
         .unwrap_or_else(|| voices::default_for_lang(lang).to_string())
 }
+
+/// Returns true if the user explicitly picked a voice in the gallery
+/// (active_voice differs from the language's default). Used to decide whether
+/// AI chat replies should auto-voice: explicit selection → spoken; default →
+/// text + "Speak this" button (saves credits/latency).
+fn user_voice_explicitly_set(state: &AppState, user_id: i64, lang: &str) -> bool {
+    let current = user_voice(state, user_id, lang);
+    current != voices::default_for_lang(lang)
+}
 fn ensure_user(state: &AppState, user_id: i64, username: Option<&str>) -> String {
     let _ = state.db.upsert_user(user_id, username);
     user_lang(state, user_id)
@@ -882,8 +891,25 @@ pub async fn handle_message(
         if msg.voice().is_some() && state.whisper.enabled {
             return handle_voice_conversation(bot, msg, state).await;
         }
-        if msg.text().is_some() {
-            bot.send_message(cid, s.unknown_cmd).await?;
+        // Any plain text with no pending action → route to the AI brain
+        // directly. Voice behavior: if the user explicitly chose a voice
+        // (active_voice differs from the language default), the bot replies
+        // in that voice automatically — a true session voice. Otherwise it
+        // replies as text and the user can tap "Speak this" to hear it.
+        if let Some(txt) = msg.text() {
+            let t = sanitize_text(txt);
+            if !t.trim().is_empty() && state.noxis.enabled() {
+                let out = if user_voice_explicitly_set(&state, user_id, &lang) {
+                    OutMode::Voice
+                } else {
+                    OutMode::Text
+                };
+                do_ask(bot, cid, user_id, &t, &lang, state, s, out).await?;
+                return Ok(());
+            }
+            if !state.noxis.enabled() {
+                bot.send_message(cid, s.brain_off).await?;
+            }
         }
         return Ok(());
     }
@@ -1147,10 +1173,15 @@ pub async fn handle_callback(
     // ── Action buttons (new inline menu) ─────────────────────────────────────
     if let Some(act) = data.strip_prefix("act:") {
         bot.answer_callback_query(&q.id).await?;
-        let cmd_msg = match q.message.clone() {
-            Some(m) => m,
-            None => return Ok(()),
-        };
+        // `user_id` is the real user who tapped the button (q.from), NOT from
+        // cmd_msg (which is the bot's message and would give uid=0).
+        let cid = q
+            .message
+            .as_ref()
+            .map(|m| m.chat.id)
+            .unwrap_or_else(|| teloxide::types::ChatId(user_id));
+        let lang = user_lang(&state, user_id);
+        let s = crate::i18n::get(&lang);
         match act {
             "ask" => {
                 if let Some(m) = q.message {
@@ -1161,73 +1192,134 @@ pub async fn handle_callback(
                 }
             }
             "speak" => {
-                handle_command(
-                    bot.clone(),
-                    cmd_msg.clone(),
-                    Command::Speak(String::new()),
-                    state.clone(),
-                )
-                .await?
+                state.pending.insert(
+                    user_id,
+                    PendingAction::AwaitingPrompt {
+                        kind: PromptKind::Speak,
+                        mode: OutMode::Voice,
+                    },
+                );
+                bot.send_message(cid, "✍️ Type the text you want me to speak, then send it:")
+                    .await?;
             }
             "myvoice" => {
-                handle_command(
-                    bot.clone(),
-                    cmd_msg.clone(),
-                    Command::Myvoice(String::new()),
-                    state.clone(),
-                )
-                .await?
+                if !state.clone_engine.enabled {
+                    bot.send_message(cid, s.cloning_disabled).await?;
+                } else {
+                    state.pending.insert(
+                        user_id,
+                        PendingAction::AwaitingPrompt {
+                            kind: PromptKind::MyVoice,
+                            mode: OutMode::Voice,
+                        },
+                    );
+                    bot.send_message(
+                        cid,
+                        format!(
+                            "{}\n\n✍️ Then send me the text to speak in your voice.",
+                            s.myvoice_usage
+                        ),
+                    )
+                    .await?;
+                }
             }
             "clone" => {
-                handle_command(bot.clone(), cmd_msg.clone(), Command::Clone, state.clone()).await?
+                if !state.clone_engine.enabled {
+                    bot.send_message(cid, s.cloning_disabled).await?;
+                } else if state.config.security.require_consent && !state.db.has_consent(user_id) {
+                    bot.send_message(cid, s.consent_prompt)
+                        .reply_markup(keyboards::consent_keyboard())
+                        .await?;
+                } else if !state.rate_limiter.check(user_id, RateKind::Clone) {
+                    bot.send_message(cid, s.rate_limited).await?;
+                } else {
+                    state
+                        .pending
+                        .insert(user_id, PendingAction::AwaitingVoiceForClone);
+                    bot.send_message(cid, s.clone_prompt).await?;
+                }
             }
             "voices" => {
-                handle_command(bot.clone(), cmd_msg.clone(), Command::Voices, state.clone()).await?
+                let installed = state.tts.available_voices();
+                let active = user_voice(&state, user_id, &lang);
+                let header = if lang == "ar" {
+                    format!("{}\n\n{}", s.voices_header, s.arabic_more)
+                } else {
+                    s.voices_header.to_string()
+                };
+                bot.send_message(cid, crate::i18n::md2(&header))
+                    .parse_mode(ParseMode::MarkdownV2)
+                    .reply_markup(keyboards::voices_keyboard(&lang, &installed, &active, 0))
+                    .await?;
+                if lang == "ar" {
+                    bot.send_message(cid, "⬇️ Install more Arabic voices:")
+                        .reply_markup(keyboards::arabic_install_keyboard())
+                        .await?;
+                }
             }
             "lang" => {
-                handle_command(bot.clone(), cmd_msg.clone(), Command::Lang, state.clone()).await?
+                bot.send_message(cid, s.choose_lang)
+                    .reply_markup(keyboards::lang_keyboard())
+                    .await?;
             }
             "credits" => {
-                handle_command(
-                    bot.clone(),
-                    cmd_msg.clone(),
-                    Command::Credits,
-                    state.clone(),
-                )
-                .await?
+                let (credits, daily_used) = state
+                    .db
+                    .get_user(user_id)
+                    .ok()
+                    .flatten()
+                    .map(|u| (u.credits, u.daily_used))
+                    .unwrap_or((0, 0));
+                let free_max = state.config.limits.free_daily_credits;
+                let text = s
+                    .credits_info
+                    .replace("{credits}", &credits.to_string())
+                    .replace("{free}", &daily_used.to_string())
+                    .replace("{max}", &free_max.to_string());
+                bot.send_message(cid, text).await?;
             }
             "settings" => {
-                handle_command(
-                    bot.clone(),
-                    cmd_msg.clone(),
-                    Command::Settings,
-                    state.clone(),
-                )
-                .await?
+                show_settings(bot.clone(), cid, user_id, &state, s).await?;
             }
             "stats" => {
-                handle_command(
-                    bot.clone(),
-                    cmd_msg.clone(),
-                    Command::MyStats,
-                    state.clone(),
-                )
-                .await?
+                let stats_engine = StatsEngine::new(state.db.clone());
+                match stats_engine
+                    .user_stats(user_id, state.config.limits.free_daily_credits)
+                    .await
+                {
+                    Ok(stats) => {
+                        let text = format_user_stats(&stats, s);
+                        bot.send_message(cid, text).await?;
+                    }
+                    Err(e) => {
+                        error!("user stats error: {e}");
+                        bot.send_message(cid, "Failed to fetch stats").await?;
+                    }
+                }
             }
             "help" => {
-                handle_command(bot.clone(), cmd_msg.clone(), Command::Help, state.clone()).await?
+                bot.send_message(cid, crate::i18n::md2(s.help))
+                    .parse_mode(ParseMode::MarkdownV2)
+                    .reply_markup(keyboards::main_menu(s))
+                    .await?;
             }
             "reset" => {
-                handle_command(bot.clone(), cmd_msg.clone(), Command::Reset, state.clone()).await?
+                state.memory.clear(user_id);
+                state.last_reply.remove(&user_id);
+                state.db.audit(user_id, "reset_memory", "");
+                bot.send_message(cid, s.reset_done).await?;
             }
             "upgrade" => {
-                handle_command(
-                    bot.clone(),
-                    cmd_msg.clone(),
-                    Command::Upgrade,
-                    state.clone(),
+                bot.send_message(
+                    cid,
+                    crate::i18n::md2(&format!(
+                        "{}\n\n{}\n\n{}",
+                        s.upgrade_header, s.upgrade_info, s.payment_secure
+                    )),
                 )
-                .await?
+                .parse_mode(ParseMode::MarkdownV2)
+                .reply_markup(keyboards::upgrade_menu())
+                .await?;
             }
             _ => {}
         }
