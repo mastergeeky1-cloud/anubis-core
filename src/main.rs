@@ -11,6 +11,7 @@ mod noxis;
 mod security;
 mod tts;
 mod whisper;
+mod ws;
 
 use anyhow::Result;
 use std::sync::Arc;
@@ -106,5 +107,25 @@ async fn main() -> Result<()> {
         last_reply: Arc::new(dashmap::DashMap::new()),
     };
 
-    bot::run(state).await
+    // Real-time opcode WebSocket transport (alongside the Telegram bot).
+    let ws_cfg = ws::WsServerConfig {
+        bind: std::env::var("ANUBIS_WS_BIND")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or_else(|| "127.0.0.1:7600".parse().expect("valid bind addr")),
+        auth_token: std::env::var("ANUBIS_WS_TOKEN").ok().map(Into::into),
+    };
+    if ws_cfg.auth_token.is_some() {
+        info!("ANUBIS WS server auth: token required");
+    }
+
+    let bot_state = state.clone();
+    let bot_fut = bot::run(state);
+    let ws_fut = ws::run_ws_server(bot_state, ws_cfg);
+
+    tokio::select! {
+        r = bot_fut => r?,
+        r = ws_fut => r?,
+    }
+    Ok(())
 }

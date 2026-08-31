@@ -154,32 +154,29 @@ pub fn clones_keyboard(clones: &[crate::db::VoiceClone]) -> InlineKeyboardMarkup
 
 /// Main command-center menu shown after /start and /menu. Each button is an
 /// action that either runs directly or opens a Text/Voice choice.
-pub fn main_menu(_s: &crate::i18n::Strings) -> InlineKeyboardMarkup {
+pub fn main_menu(s: &crate::i18n::Strings) -> InlineKeyboardMarkup {
     let rows = vec![
         vec![
-            InlineKeyboardButton::callback("🧠 Chat with AI", "act:ask"),
-            InlineKeyboardButton::callback("🔊 Text → Speech", "act:speak"),
+            InlineKeyboardButton::callback(s.btn_chat, "act:ask"),
+            InlineKeyboardButton::callback(s.btn_tts, "act:speak"),
         ],
         vec![
-            InlineKeyboardButton::callback("🧬 My Cloned Voice", "act:myvoice"),
-            InlineKeyboardButton::callback("🎤 Clone a Voice", "act:clone"),
+            InlineKeyboardButton::callback(s.btn_myvoice, "act:myvoice"),
+            InlineKeyboardButton::callback(s.btn_clone, "act:clone"),
         ],
         vec![
-            InlineKeyboardButton::callback("🎙 Browse Voices", "act:voices"),
-            InlineKeyboardButton::callback("⚙️ Settings", "act:settings"),
+            InlineKeyboardButton::callback(s.btn_voices, "act:voices"),
+            InlineKeyboardButton::callback(s.btn_settings, "act:settings"),
         ],
         vec![
-            InlineKeyboardButton::callback("💳 Credits", "act:credits"),
-            InlineKeyboardButton::callback("📊 My Stats", "act:stats"),
+            InlineKeyboardButton::callback(s.btn_credits, "act:credits"),
+            InlineKeyboardButton::callback(s.btn_stats, "act:stats"),
         ],
         vec![
-            InlineKeyboardButton::callback("⭐ Upgrade", "act:upgrade"),
-            InlineKeyboardButton::callback("❓ Help", "act:help"),
+            InlineKeyboardButton::callback(s.btn_upgrade, "act:upgrade"),
+            InlineKeyboardButton::callback(s.btn_help, "act:help"),
         ],
-        vec![InlineKeyboardButton::callback(
-            "🔄 Reset Memory",
-            "act:reset",
-        )],
+        vec![InlineKeyboardButton::callback(s.btn_reset, "act:reset")],
     ];
     InlineKeyboardMarkup::new(rows)
 }

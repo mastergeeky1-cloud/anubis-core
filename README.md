@@ -75,6 +75,29 @@ MODEL=base ./scripts/whisper.sh   # builds whisper.cpp + downloads a model, serv
 # enable in config.toml [whisper] or set ANUBIS_WHISPER_URL until it's the default
 ```
 
+## Real-time WebSocket transport (streaming chat & voice)
+
+Alongside the Telegram bot, ANUBIS exposes a raw WebSocket endpoint for web
+apps, desktop clients, and game engines. It speaks a tiny binary opcode
+protocol that supports **live streaming** — you hear the TTS voice and see the
+LLM text *before* generation finishes, and can send continuous voice for
+on-the-fly transcription.
+
+```
+ws://localhost:7600/ws      (bind + optional token via ANUBIS_WS_BIND / ANUBIS_WS_TOKEN)
+
+Every frame:  [opcode:u8][len:u32 BE][payload]
+Client → 0x01 Hello · 0x02 Text · 0x03 Voice · 0x04 Config · 0x05 Ping · 0x06 History
+Server → 0x81 Hello · 0x82 TextDelta · 0x83 VoiceChunk · 0x84 Status · 0x85 Error
+                                0x86 Meta · 0x87 Pong · 0x88 History · 0x89 TextEnd
+```
+
+**Try it in the browser:** open `assets/ws-demo.html` (an ES-module client,
+`assets/anubis-ws-client.mjs`, is included) to stream a live AI conversation.
+
+The WS server shares the same core (Noxis brain, TTS router, clone engine,
+whisper, memory) as the Telegram bot — it is purely a second transport.
+
 ## Payments
 Upgrading uses **Telegram Stars** (XTR, no card data handled by the bot).
 Credits are granted idempotently — each Telegram charge ID can only credit

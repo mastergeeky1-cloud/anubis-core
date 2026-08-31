@@ -55,6 +55,9 @@ xxhash-rust        = { version = "0.8", features = ["xxh64"] }
 # ── audio (pure-Rust WAV I/O + effects) ───────────────────────────────────
 hound              = "3.5"
 
+# ── real-time WebSocket transport (opcode protocol) ─────────────────────────
+axum              = { version = "0.7", features = ["ws"] }
+
 [profile.release]
 opt-level     = 3
 lto           = true
