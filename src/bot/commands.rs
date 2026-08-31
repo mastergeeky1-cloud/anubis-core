@@ -1,54 +1,83 @@
 use teloxide::utils::command::BotCommands;
 
 #[derive(BotCommands, Clone, Debug)]
-#[command(rename_rule = "lowercase", description = "ANUBIS Voice Bot commands:")]
+#[command(
+    rename_rule = "lowercase",
+    description = "🔱 ANUBIS Voice Bot — command list:"
+)]
 pub enum Command {
-    #[command(description = "Start the bot")]
+    // ── Getting started ─────────────────────────────────────────────────────
+    #[command(description = "🚀 Start the bot and show the main menu")]
     Start,
 
-    #[command(description = "Show all commands")]
+    #[command(description = "📋 Show the main command-center menu")]
+    Menu,
+
+    #[command(description = "❓ Show this help message")]
     Help,
 
-    #[command(description = "Generate speech: /speak <text>")]
-    Speak(String),
-
-    #[command(description = "Ask the local Noxis Core brain: /ask <text>")]
+    // ── AI & speech ────────────────────────────────────────────────────────
+    #[command(description = "🧠 Chat with the local Noxis Core brain: /ask <text>")]
     Ask(String),
 
-    #[command(description = "Speak in your cloned voice: /myvoice <text>")]
+    #[command(description = "🔊 Generate speech from text: /speak <text>")]
+    Speak(String),
+
+    #[command(description = "🧬 Speak in your cloned voice: /myvoice <text>")]
     Myvoice(String),
 
-    #[command(description = "Clone your voice (send a 30–60s voice message after)")]
+    // ── Voice cloning ──────────────────────────────────────────────────────
+    #[command(description = "🎤 Clone your voice (send a 30–60s voice message after)")]
     Clone,
 
-    #[command(description = "List and manage your voice clones")]
+    #[command(description = "🗂 Manage your voice clones")]
     Clones,
 
-    #[command(description = "List available TTS voices")]
+    // ── Voices & presets ───────────────────────────────────────────────────
+    #[command(description = "🎙 Browse and pick a TTS voice")]
     Voices,
 
-    #[command(description = "Set active TTS voice: /setvoice <id>")]
+    #[command(description = "⚙️ Set active TTS voice: /setvoice <id>")]
     Setvoice(String),
 
-    #[command(description = "Browse voice presets")]
+    #[command(description = "✨ Browse curated voice presets")]
     Presets,
 
-    #[command(description = "Change interface language")]
+    // ── Settings & account ─────────────────────────────────────────────────
+    #[command(description = "🌐 Change interface language")]
     Lang,
 
-    #[command(description = "Show your credit balance")]
+    #[command(description = "💳 Show your credit balance")]
     Credits,
 
-    // ── admin commands ──────────────────────────────────────────────────────
-    #[command(description = "[admin] Ban a user: /ban <user_id>")]
+    #[command(description = "📊 Show your usage statistics")]
+    MyStats,
+
+    #[command(description = "⚙️ Show your current settings (voice, language, credits)")]
+    Settings,
+
+    #[command(description = "🔄 Clear conversation memory for /ask")]
+    Reset,
+
+    #[command(description = "⭐ Upgrade and buy credits via Telegram Stars")]
+    Upgrade,
+
+    // ── Admin ──────────────────────────────────────────────────────────────
+    #[command(description = "🛡 Ban a user: /ban <user_id>")]
     Ban(String),
 
-    #[command(description = "[admin] Unban a user: /unban <user_id>")]
+    #[command(description = "🛡 Unban a user: /unban <user_id>")]
     Unban(String),
 
-    #[command(description = "[admin] Grant credits: /grant <user_id> <amount>")]
+    #[command(description = "🛡 Grant credits: /grant <user_id> <amount>")]
     Grant(String),
 
-    #[command(description = "[admin] Show bot statistics")]
+    #[command(description = "📊 Show bot statistics (admin)")]
     Stats,
+
+    #[command(description = "👥 List all users (admin)")]
+    Users,
+
+    #[command(description = "📈 Show daily active users (admin)")]
+    DailyActive,
 }

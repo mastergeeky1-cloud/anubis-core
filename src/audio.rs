@@ -74,27 +74,4 @@ impl AudioProcessor {
         }
         Ok(out)
     }
-
-    /// Seconds of audio (for validation/limits).
-    pub async fn duration_secs(&self, bytes: &[u8], ext: &str) -> Result<f64> {
-        let inp = self.tmp_path(ext);
-        tokio::fs::write(&inp, bytes).await?;
-        let out = Command::new("ffprobe")
-            .args([
-                "-v",
-                "quiet",
-                "-show_entries",
-                "format=duration",
-                "-of",
-                "csv=p=0",
-                inp.to_str().unwrap(),
-            ])
-            .output()
-            .await?;
-        tokio::fs::remove_file(&inp).await.ok();
-        let raw = String::from_utf8_lossy(&out.stdout);
-        raw.trim()
-            .parse::<f64>()
-            .map_err(|_| AnubisError::Audio("could not parse audio duration".into()))
-    }
 }

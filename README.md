@@ -4,12 +4,17 @@ A local-first, open-source, bare-metal **voice AI system** written in Rust.
 
 ANUBIS Core combines:
 - **Noxis Core** — a local LLM "brain" (tool routing, memory, policy) running
-  entirely on your machine via a `llama.cpp` sidecar.
-- **Speech output** — local TTS engines (Piper, Kokoro) with an 18-voice
+  entirely on your machine via a `llama.cpp` sidecar (or a hosted
+  OpenAI-compatible endpoint such as omniroute), with **streaming** replies.
+- **Speech output** — local TTS engines (Piper, Kokoro) with an 20+ voice
   multilingual catalogue (10 languages).
+- **Real-time voice conversation** — send a voice message and the bot
+  transcribes it locally (whisper.cpp), chats with Noxis Core, and replies in
+  an audible voice (voice-to-voice loop).
 - **Voice cloning** — local, MIT-licensed Chatterbox-Multilingual sidecar
   (replaces the old non-commercial XTTS/F5 path).
-- **Telegram surface** — a teloxide bot (`/speak`, `/myvoice`, `/clone`, …).
+- **Telegram surface** — a teloxide bot with inline-button menus and secure
+  **Telegram Stars** payments (`/speak`, `/myvoice`, `/clone`, `/upgrade`, …).
 
 Everything runs locally. No audio, transcript, or model traffic leaves the
 machine unless you configure an external provider.
@@ -57,8 +62,23 @@ cargo build --release
 ```
 
 ## Commands
-`/start /help /speak /myvoice /clone /clones /voices /setvoice /presets
-/lang /credits /ask <text> /ban /unban /grant /stats`
+`/start /menu /help /speak /ask /myvoice /clone /clones /voices /setvoice
+/presets /lang /credits /upgrade /reset /mystats /ban /unban /grant /stats`
+
+**Real-time voice:** just send a voice message and ANUBIS will transcribe it
+(locally via whisper.cpp), answer through Noxis Core, and reply as audio.
+`/reset` clears the conversation memory used by `/ask` and voice chat.
+
+## Optional whisper sidecar (voice input)
+```bash
+MODEL=base ./scripts/whisper.sh   # builds whisper.cpp + downloads a model, serves on :8890
+# enable in config.toml [whisper] or set ANUBIS_WHISPER_URL until it's the default
+```
+
+## Payments
+Upgrading uses **Telegram Stars** (XTR, no card data handled by the bot).
+Credits are granted idempotently — each Telegram charge ID can only credit
+once, and the amount is validated against the tier before crediting.
 
 ## Security
 See [SECURITY.md](./SECURITY.md). Token via env only; cloning requires consent

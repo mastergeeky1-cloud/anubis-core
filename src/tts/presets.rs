@@ -33,6 +33,18 @@ pub const PRESETS: &[VoicePreset] = &[
         lang: "ar",
     },
     VoicePreset {
+        name: "Zayd0 (AR)",
+        voice_id: "ar-zayd0-diacritized",
+        desc: "Arabic diacritized male voice (community)",
+        lang: "ar",
+    },
+    VoicePreset {
+        name: "Emirati (AR)",
+        voice_id: "ar_AE-emirati-female",
+        desc: "Arabic Emirati female voice (community)",
+        lang: "ar",
+    },
+    VoicePreset {
         name: "Paola (IT)",
         voice_id: "it_IT-paola-medium",
         desc: "Italian female voice",

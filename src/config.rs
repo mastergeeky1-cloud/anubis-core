@@ -10,10 +10,17 @@ pub struct Config {
     pub llm: LlmConfig,
     pub tts: TtsConfig,
     pub clone: CloneConfig,
+    pub whisper: WhisperConfig,
     pub database: DatabaseConfig,
     pub limits: LimitsConfig,
     pub audio: AudioConfig,
     pub security: SecurityConfig,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct WhisperConfig {
+    pub enabled: bool,
+    pub url: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -27,6 +34,9 @@ pub struct LlmConfig {
     pub model: String,
     pub max_tokens: u32,
     pub system_prompt: String,
+    /// Bearer token for hosted OpenAI-compatible endpoints (e.g. omniroute).
+    /// Loaded from ANUBIS_LLM_KEY. Never stored in config.toml.
+    pub api_key: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -90,11 +100,22 @@ impl Config {
         if let Ok(u) = std::env::var("ANUBIS_LLM_URL") {
             cfg.llm.base_url = u;
         }
+        if let Ok(k) = std::env::var("ANUBIS_LLM_KEY") {
+            cfg.llm.api_key = k;
+        }
+        if let Ok(m) = std::env::var("ANUBIS_LLM_MODEL") {
+            cfg.llm.model = m;
+        }
         if let Ok(u) = std::env::var("ANUBIS_CLONE_URL") {
             cfg.clone.url = u;
         }
         if let Ok(u) = std::env::var("ANUBIS_KOKORO_URL") {
             cfg.tts.kokoro_url = u;
+        }
+        if let Ok(u) = std::env::var("ANUBIS_WHISPER_URL") {
+            let u = u.trim().to_string();
+            cfg.whisper.url = u.clone();
+            cfg.whisper.enabled = !u.is_empty();
         }
 
         if cfg.telegram.token.trim().is_empty() {
@@ -119,6 +140,7 @@ impl Config {
                 base_url: "http://127.0.0.1:8080".into(),
                 model: "local".into(),
                 max_tokens: 512,
+                api_key: String::new(),
                 system_prompt:
                     "You are Noxis Core, the secure local assistant inside ANUBIS. Be concise."
                         .into(),
@@ -133,6 +155,10 @@ impl Config {
                 url: "http://127.0.0.1:8008".into(),
                 clones_dir: "./clones".into(),
                 ref_text: String::new(),
+            },
+            whisper: WhisperConfig {
+                enabled: false,
+                url: String::new(),
             },
             database: DatabaseConfig {
                 path: "./anubis.db".into(),

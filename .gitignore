@@ -14,10 +14,21 @@ config.local.toml
 
 # Local model weights / binaries (download via setup script)
 /models/
+/whisper/
 *.onnx
 *.gguf
 piper
 piper.exe
+
+# Virtual environments
+/venv/
+/.venv/
+
+# Downloaded binaries (installed by scripts/setup.sh)
+/bin/
+
+# Runtime logs
+*.log
 
 # OS / editor
 .DS_Store

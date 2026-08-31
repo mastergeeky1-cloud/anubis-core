@@ -34,6 +34,13 @@ impl TtsRouter {
                 return engine.synthesize_wav(text, voice_id).await;
             }
         }
-        self.engines[0].synthesize_wav(text, voice_id).await
+        // No engine reported the voice as available. If we have engines at all,
+        // let the first one attempt it (it may still resolve an alias); but a
+        // router with no engines cannot synthesize anything.
+        self.engines
+            .first()
+            .ok_or_else(|| crate::error::AnubisError::Tts("no TTS engine configured".into()))?
+            .synthesize_wav(text, voice_id)
+            .await
     }
 }

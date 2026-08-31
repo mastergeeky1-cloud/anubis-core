@@ -32,23 +32,8 @@ pub enum AnubisError {
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
-    #[error("insufficient credits")]
-    NoCredits,
-
     #[error("voice not found: {0}")]
     VoiceNotFound(String),
-
-    #[error("no cloned voice — use /clone first")]
-    NoClone,
-
-    #[error("text too long ({chars} chars, max {max})")]
-    TextTooLong { chars: usize, max: usize },
-
-    #[error("audio too long ({secs}s, max {max}s)")]
-    AudioTooLong { secs: u32, max: u32 },
-
-    #[error("unsupported language: {0}")]
-    BadLang(String),
 }
 
 impl From<r2d2::Error> for AnubisError {

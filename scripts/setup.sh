@@ -23,15 +23,22 @@ echo "==> Piper voices (MIT)"
 PIPER_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main"
 declare -A VOICES=(
   ["en/en_US-amy-medium"]="en/en_US/amy/medium"
+  ["en/en_US-amy-high"]="en/en_US/amy/high"
   ["en/en_US-ryan-high"]="en/en_US/ryan/high"
-  ["en/en_GB-alan-low"]="en/en_GB/alan/low"
+  ["en/en_US-ryan-medium"]="en/en_US/ryan/medium"
   ["en/en_US-lessac-medium"]="en/en_US/lessac/medium"
+  ["en/en_US-lessac-high"]="en/en_US/lessac/high"
+  ["en/en_US-hubert-high"]="en/en_US/hubert/high"
+  ["en/en_GB-alan-low"]="en/en_GB/alan/low"
+  ["en/en_GB-cori-high"]="en/en_GB/cori/high"
+  ["en/en_GB-northern_english_male-medium"]="en/en_GB/northern_english_male/medium"
   ["ar/ar_JO-kareem-medium"]="ar/ar_JO/kareem/medium"
   ["it/it_IT-riccardo-x_low"]="it/it_IT/riccardo/x_low"
   ["it/it_IT-paola-medium"]="it/it_IT/paola/medium"
   ["fr/fr_FR-siwis-medium"]="fr/fr_FR/siwis/medium"
   ["es/es_ES-carlfm-x_low"]="es/es_ES/carlfm/x_low"
   ["de/de_DE-thorsten-medium"]="de/de_DE/thorsten/medium"
+  ["de/de_DE-thorsten-high"]="de/de_DE/thorsten/high"
   ["ru/ru_RU-irinia-medium"]="ru/ru_RU/irinia/medium"
   ["hi/hi_IN-deepika-medium"]="hi/hi_IN/deepika/medium"
   ["tr/tr_TR-dfki-medium"]="tr/tr_TR/dfki/medium"
@@ -45,6 +52,30 @@ for dest in "${!VOICES[@]}"; do
     echo "    -> $f"
     curl -fsSL "$PIPER_BASE/$src/$ext" -o "$PIPER_DIR/$f" || echo "    (skip $f)"
   done
+done
+
+echo "==> Community Arabic voice packs (more Arabic voices!)"
+# These are community Piper models not in the official rhasspy/piper-voices
+# tree. Each downloads a .onnx + .onnx.json into ./voices/ar.
+declare -A AR_COMMUNITY=(
+  ["ar/ar_JO-kareem-low"]="ar/ar_JO/kareem/low"
+  ["ar/ar-zayd0-diacritized"]="https://huggingface.co/neurlang/piper-onnx-zayd0-arabic-diacritized/resolve/main/piper-onnx-zayd0-arabic-diacritized"
+  ["ar/ar_AE-emirati-female"]="https://huggingface.co/vadimbelsky/arabic-emirati-female-piper/resolve/main/arabic-emirati-female-model"
+)
+for dest in "${!AR_COMMUNITY[@]}"; do
+  src="${AR_COMMUNITY[$dest]}"
+  mkdir -p "$PIPER_DIR/$(dirname "$dest")"
+  # If src is a full URL, download directly; else resolve from the official tree.
+  if [[ "$src" == http* ]]; then
+    echo "    -> $dest (community)"
+    curl -fsSL "$src.onnx" -o "$PIPER_DIR/$dest.onnx" || echo "    (skip $dest.onnx)"
+    curl -fsSL "$src.onnx.json" -o "$PIPER_DIR/$dest.onnx.json" || echo "    (skip $dest.onnx.json)"
+  else
+    for ext in onnx onnx.json; do
+      echo "    -> $dest.$ext"
+      curl -fsSL "$PIPER_BASE/$src/$ext" -o "$PIPER_DIR/$dest.$ext" || echo "    (skip $dest.$ext)"
+    done
+  fi
 done
 
 echo "==> Piper binary"

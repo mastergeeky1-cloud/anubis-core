@@ -6,9 +6,11 @@ mod config;
 mod db;
 mod error;
 mod i18n;
+mod memory;
 mod noxis;
 mod security;
 mod tts;
+mod whisper;
 
 use anyhow::Result;
 use std::sync::Arc;
@@ -71,6 +73,16 @@ async fn main() -> Result<()> {
 
     let audio = Arc::new(audio::AudioProcessor::new(&cfg.audio.output_dir)?);
 
+    // Whisper local transcription sidecar (voice-to-voice). Optional.
+    let whisper = Arc::new(whisper::WhisperClient::new(
+        cfg.whisper.url.clone(),
+        cfg.whisper.enabled,
+    ));
+    info!("Whisper voice input: enabled={}", cfg.whisper.enabled);
+
+    // Per-user conversation memory for Noxis Core.
+    let memory = Arc::new(memory::ConversationStore::new(12));
+
     let rate_limiter = Arc::new(security::RateLimiter::new(
         cfg.security.rate_speak_per_min,
         cfg.security.rate_clone_per_hr,
@@ -89,6 +101,9 @@ async fn main() -> Result<()> {
         rate_limiter,
         cache,
         watermark,
+        whisper,
+        memory,
+        last_reply: Arc::new(dashmap::DashMap::new()),
     };
 
     bot::run(state).await

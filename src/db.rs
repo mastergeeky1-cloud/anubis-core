@@ -10,20 +10,20 @@ pub struct Database {
     pool: Pool<SqliteConnectionManager>,
 }
 
-// Pool is internally Arc-based and is Send + Sync.
-unsafe impl Send for Database {}
-unsafe impl Sync for Database {}
-
 #[derive(Debug, Clone)]
 pub struct User {
+    #[allow(dead_code)]
     pub id: i64,
+    #[allow(dead_code)]
     pub username: Option<String>,
     pub lang: String,
     pub credits: i32,
     pub daily_used: i32,
     pub daily_reset: String,
     pub active_voice: String,
+    #[allow(dead_code)]
     pub consent_at: Option<String>,
+    #[allow(dead_code)]
     pub banned: bool,
 }
 
@@ -78,9 +78,20 @@ CREATE TABLE IF NOT EXISTS audit_log (
     detail     TEXT    NOT NULL DEFAULT ''
 );
 
+CREATE TABLE IF NOT EXISTS payments (
+    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    charge_id          TEXT    NOT NULL UNIQUE,
+    payload            TEXT    NOT NULL,
+    user_id            INTEGER NOT NULL REFERENCES users(id),
+    credits            INTEGER NOT NULL,
+    stars              INTEGER NOT NULL,
+    created_at         TEXT    NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_clones_user     ON voice_clones(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_log_user ON credit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_user      ON audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_user   ON payments(user_id);
 ";
 
 impl Database {
@@ -96,7 +107,7 @@ impl Database {
         Ok(Self { pool })
     }
 
-    fn conn(&self) -> Result<Conn> {
+    pub fn conn(&self) -> Result<Conn> {
         self.pool.get().map_err(AnubisError::from)
     }
 
@@ -252,6 +263,53 @@ impl Database {
         self.log_credit_conn(&c, user_id, amount, reason)
     }
 
+    /// Idempotently record a Telegram Stars payment and credit the user.
+    ///
+    /// `charge_id` is the Telegram-provided `telegram_payment_charge_id`,
+    /// which is unique per payment. Because `payments.charge_id` is UNIQUE,
+    /// replaying the same `successful_payment` update (e.g. due to a retry)
+    /// is detected and we do NOT double-credit.
+    ///
+    /// Returns `true` if the credits were newly granted, `false` if this
+    /// charge was already recorded (replay) or the user was missing.
+    pub fn record_payment(
+        &self,
+        charge_id: &str,
+        payload: &str,
+        user_id: i64,
+        credits: i32,
+        stars: i32,
+    ) -> bool {
+        // User must exist before we credit them.
+        if self.get_user(user_id).ok().flatten().is_none() {
+            return false;
+        }
+        let c = match self.conn() {
+            Ok(c) => c,
+            Err(_) => return false,
+        };
+        let now = Utc::now().to_rfc3339();
+        // INSERT OR IGNORE: if charge_id already exists, no row is inserted.
+        let inserted = c
+            .execute(
+                "INSERT OR IGNORE INTO payments (charge_id, payload, user_id, credits, stars, created_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![charge_id, payload, user_id, credits, stars, now],
+            )
+            .unwrap_or(0);
+        if inserted == 0 {
+            // Already recorded — treat as replay and do not credit again.
+            return false;
+        }
+        // Fresh payment: credit the user atomically with a ledger entry.
+        c.execute(
+            "UPDATE users SET credits = credits + ?1 WHERE id = ?2",
+            params![credits, user_id],
+        )
+        .map(|_| self.log_credit_conn(&c, user_id, credits, "telegram_stars"))
+        .is_ok()
+    }
+
     fn log_credit_conn(
         &self,
         c: &rusqlite::Connection,
@@ -265,17 +323,6 @@ impl Database {
             params![user_id, delta, reason, now],
         )?;
         Ok(())
-    }
-
-    pub fn stats(&self) -> Result<(i64, i64)> {
-        let c = self.conn()?;
-        let users: i64 = c.query_row("SELECT COUNT(*) FROM users", [], |r| r.get(0))?;
-        let gens: i64 = c.query_row(
-            "SELECT COALESCE(SUM(ABS(delta)), 0) FROM credit_log WHERE delta < 0",
-            [],
-            |r| r.get(0),
-        )?;
-        Ok((users, gens))
     }
 
     pub fn save_clone(&self, clone: &VoiceClone) -> Result<()> {

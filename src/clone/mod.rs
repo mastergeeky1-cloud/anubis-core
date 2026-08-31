@@ -24,7 +24,10 @@ impl ChatterboxCloner {
     pub fn new(base_url: String, clones_dir: &str, enabled: bool) -> Self {
         Self {
             client: reqwest::Client::builder()
-                .timeout(std::time::Duration::from_secs(180))
+                // Clone synthesis on CPU can take a few minutes (longer on
+                // first warm request while the model loads), so allow generous
+                // time before timing out.
+                .timeout(std::time::Duration::from_secs(420))
                 .build()
                 .expect("reqwest client"),
             base_url,

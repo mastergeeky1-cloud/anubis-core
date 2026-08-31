@@ -26,18 +26,45 @@ impl PiperTts {
     }
 
     fn model_path(&self, voice_id: &str, lang: &str) -> PathBuf {
-        self.voices_dir
-            .join(lang)
-            .join(format!("{}.onnx", voice_id))
+        // Models are nested: <voices_dir>/<lang>/<...>/<voice_id>.onnx
+        // Search recursively so we don't depend on the exact subfolder layout.
+        let wanted = format!("{}.onnx", voice_id);
+        let mut found = None;
+        if let Ok(entries) = std::fs::read_dir(&self.voices_dir) {
+            for e in entries.flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    if let Some(m) = find_model_recursive(&p, &wanted) {
+                        found = Some(m);
+                        break;
+                    }
+                } else if p.file_name().map(|n| n == wanted.as_str()).unwrap_or(false) {
+                    found = Some(p);
+                    break;
+                }
+            }
+        }
+        found.unwrap_or_else(|| self.voices_dir.join(lang).join(&wanted))
     }
+}
+
+fn find_model_recursive(dir: &std::path::Path, wanted: &str) -> Option<PathBuf> {
+    let entries = std::fs::read_dir(dir).ok()?;
+    for e in entries.flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            if let Some(m) = find_model_recursive(&p, wanted) {
+                return Some(m);
+            }
+        } else if p.file_name().map(|n| n == wanted).unwrap_or(false) {
+            return Some(p);
+        }
+    }
+    None
 }
 
 #[async_trait]
 impl TtsEngine for PiperTts {
-    fn id(&self) -> &str {
-        "piper"
-    }
-
     fn available_voices(&self) -> Vec<&'static voices::VoiceMeta> {
         voices::VOICES
             .iter()
