@@ -1,117 +1,172 @@
 #!/usr/bin/env python3
-"""Generate the ANUBIS Core banner shown in /start and /menu.
+"""Generate the ANUBIS repo banner (GitHub social preview).
 
-Figma isn't available in this environment, so this renders an equivalent
-on-brand banner with Pillow: dark gradient, a stylized ANUBIS eye emblem,
-wordmark, feature chips and a voice waveform.
+Creates a dark, modern banner with a gradient, an audio-wave motif, the ANUBIS
+wordmark, and a feature tagline. Pure PIL, no external deps.
 """
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import math
-import os
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+W, H = 1280, 640
 
-W, H = 800, 400
-OUT = os.path.join(os.path.dirname(__file__), "..", "assets", "banner.png")
-
-FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-FONT_REG = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-
-
-def font(path, size):
-    return ImageFont.truetype(path, size)
-
+# ── helpers ───────────────────────────────────────────────────────────────
 
 def lerp(a, b, t):
-    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+    return int(a + (b - a) * t)
 
+def hsv2rgb(h, s, v):
+    i = int(h * 6)
+    f = h * 6 - i
+    p = v * (1 - s)
+    q = v * (1 - f * s)
+    t = v * (1 - (1 - f) * s)
+    if i % 6 == 0: r, g, b = v, t, p
+    elif i % 6 == 1: r, g, b = q, v, p
+    elif i % 6 == 2: r, g, b = p, v, t
+    elif i % 6 == 3: r, g, b = p, q, v
+    elif i % 6 == 4: r, g, b = t, p, v
+    else: r, g, b = v, p, q
+    return int(r * 255), int(g * 255), int(b * 255)
 
-# ── Base gradient (deep indigo -> near black) ────────────────────────────────
-TOP = (18, 16, 38)
-BOT = (8, 7, 18)
-GOLD = (247, 200, 92)
-CYAN = (86, 214, 214)
-WHITE = (240, 242, 255)
+def font(sz, path="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
+    return ImageFont.truetype(path, sz)
 
-img = Image.new("RGB", (W, H))
-px = img.load()
+def font_reg(sz):
+    return ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", sz)
+
+def glow(draw, pos, radius, color, alpha):
+    x, y = pos
+    for r in range(radius, 0, -1):
+        a = int(alpha * (1 - r / radius))
+        draw.ellipse([x - r, y - r, x + r, y + r], fill=(*color, a))
+
+# ── base gradient canvas ──────────────────────────────────────────────────
+
+img = Image.new("RGB", (W, H), (11, 14, 22))
+dr = ImageDraw.Draw(img, "RGBA")
+
+# Vertical-ish diagonal gradient from deep indigo (top-left) to near-black (bottom).
 for y in range(H):
-    t = y / (H - 1)
-    base = lerp(TOP, BOT, t)
-    for x in range(W):
-        # subtle diagonal sheen
-        glow = 14 * (1 - abs((x / W) - 0.32)) * (1 - t)
-        r = min(255, base[0] + int(glow * 0.6))
-        g = min(255, base[1] + int(glow))
-        b = min(255, base[2] + int(glow * 1.4))
-        px[x, y] = (r, g, b)
+    t = y / H
+    r = lerp(24, 10, t)
+    g = lerp(20, 12, t)
+    b = lerp(46, 18, t)
+    dr.rectangle([0, y, W, y + 1], fill=(r, g, b))
 
-# soft radial vignette behind the emblem
-vig = Image.new("L", (W, H), 0)
-vd = ImageDraw.Draw(vig)
-vd.ellipse([150 - 150, 200 - 150, 150 + 150, 200 + 150], fill=70)
-vig = vig.filter(ImageFilter.GaussianBlur(60))
-img.putalpha(255)
-glow_layer = Image.new("RGB", (W, H), CYAN)
-img = Image.composite(glow_layer, img, vig)
-img = img.convert("RGB")
+# Soft radial glows for depth.
+glow_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+gd = ImageDraw.Draw(glow_layer)
+glow(gd, (int(W * 0.82), int(H * 0.25)), 420, (124, 92, 255), 44)   # violet
+glow(gd, (int(W * 0.78), int(H * 0.85)), 380, (34, 211, 238), 30)    # cyan
+glow(gd, (int(W * 0.15), int(H * 0.7)), 320, (236, 72, 153), 22)     # pink
+img = Image.alpha_composite(img.convert("RGBA"), glow_layer)
+dr = ImageDraw.Draw(img, "RGBA")
 
-d = ImageDraw.Draw(img)
+# ── audio waveform (left-hand motif) ─────────────────────────────────────
 
-# ── ANUBIS eye emblem (left) ─────────────────────────────────────────────────
-cx, cy, rx, ry = 150, 200, 78, 42
-# almond outline
-d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], outline=GOLD, width=5)
-# iris
-ir = 30
-d.ellipse([cx - ir, cy - ir, cx + ir, cy + ir], outline=CYAN, width=4)
-d.ellipse([cx - ir + 6, cy - ir + 6, cx + ir - 6, cy + ir - 6], outline=CYAN, width=2)
-# pupil
-pr = 12
-d.ellipse([cx - pr, cy - pr, cx + pr, cy + pr], fill=GOLD)
-# upper lid sweep
-d.line([cx - rx, cy - 6, cx - rx + 26, cy - ry + 4], fill=GOLD, width=4)
-d.line([cx + rx, cy - 6, cx + rx - 26, cy - ry + 4], fill=GOLD, width=4)
-# radiating rays (divine)
-for a in range(-60, 61, 20):
-    rad = math.radians(a)
-    r0 = ir + 14
-    r1 = ir + 30
-    x0, y0 = cx + r0 * math.cos(rad), cy + r0 * math.sin(rad) * 0.55
-    x1, y1 = cx + r1 * math.cos(rad), cy + r1 * math.sin(rad) * 0.55
-    d.line([x0, y0, x1, y1], fill=GOLD, width=2)
+WAVE_X, WAVE_Y, WAVE_W = 90, H // 2, 330
+bar_w = 7
+gap = 9
+base = 46
+n = int(WAVE_W / (bar_w + gap))
+bars = []
+for i in range(n):
+    # organic pseudo-random heights, peaking near the middle
+    x = WAVE_X + i * (bar_w + gap)
+    q = (i - n / 2) / (n / 2)
+    hgt = base * (0.5 + 0.5 * abs(1 - abs(q))) * (0.7 + 0.3 * math.sin(i * 1.7))
+    bars.append((x, hgt))
 
-# ── Wordmark + subtitle (right) ──────────────────────────────────────────────
-title = font(FONT_BOLD, 64)
-sub = font(FONT_REG, 22)
-chip = font(FONT_REG, 18)
+for i, (x, hgt) in enumerate(bars):
+    grad = (0.30, 0.72, 0.82)  # fixed cyan->violet hue range
+    hue = lerp_pull = 0.62 if i < n // 2 else 0.75
+    c = hsv2rgb(float(hue) - 0.02, 0.75, 0.95)
+    # vertical rounded bar
+    top = WAVE_Y - hgt / 2
+    bot = WAVE_Y + hgt / 2
+    dr.rounded_rectangle([x, top, x + bar_w, bot], radius=bar_w // 2, fill=(*c, 220))
 
-d.text((300, 120), "ANUBIS", font=title, fill=WHITE)
-d.text((302, 192), "Local-first AI Voice Clone Bot", font=sub, fill=CYAN)
+# Tie-in dot
+dr.ellipse([WAVE_X - 16, WAVE_Y - 4, WAVE_X - 8, WAVE_Y + 4], fill=(236, 72, 153, 230))
 
-# feature chips
-labels = ["TTS", "Voice Clone", "Noxis LLM", "Telegram Stars"]
-x = 302
-y = 240
-for lab in labels:
-    tw = d.textlength(lab, font=chip)
-    pad = 12
-    d.rounded_rectangle([x - 6, y - 4, x + tw + pad, y + 26], radius=8,
-                        outline=GOLD, width=2)
-    d.text((x + pad / 2, y), lab, font=chip, fill=GOLD)
-    x += int(tw) + pad + 16
+# ── wordmark ─────────────────────────────────────────────────────────────
 
-# ── Voice waveform (bottom) ──────────────────────────────────────────────────
-wy = 340
-mid = W // 2
-for x in range(40, W - 40, 7):
-    # mirrored symmetric envelope
-    env = math.sin((x - 40) / (W - 80) * math.pi)
-    amp = (8 + 26 * abs(math.sin(x / 22.0))) * env
-    if amp < 2:
-        amp = 2
-    col = CYAN if (x % 14 == 0) else GOLD
-    d.line([x, wy - amp, x, wy + amp], fill=col, width=3)
+# Icon: a stylized "voice" chevron in a rounded square.
+icon_size = 108
+left = WAVE_X + WAVE_W + 60
+itop = 120
+dr.rounded_rectangle([left, itop, left + icon_size, itop + icon_size],
+                     radius=26, fill=(124, 92, 255, 255))
+# Inner waveform tri-bars for the icon.
+ico_cx = left + icon_size // 2
+ico_cy = itop + icon_size // 2
+for k, (dx, hw, col) in enumerate([(-24, 10, (220, 214, 255)),
+                                    (0, 20, (255, 255, 255)),
+                                    (24, 10, (220, 214, 255))]):
+    gx = ico_cx + dx
+    dr.rounded_rectangle([gx - hw, ico_cy - 14, gx - hw + hw * 2, ico_cy + 14],
+                         radius=8, fill=col)
 
-os.makedirs(os.path.dirname(OUT), exist_ok=True)
-img.save(OUT)
-print("wrote", os.path.abspath(OUT), img.size)
+# text baseline
+tx = left + icon_size + 34
+ty = itop + icon_size // 2
+
+# "ANUBIS" — big gradient text (draw solid white then overlay a colored copy)
+big_font = font(104)
+word = "ANUBIS"
+text_w = dr.textlength(word, font=big_font)
+# Measure ascent to vertically centre
+bbox = big_font.getbbox(word)
+ascent = bbox[3] - bbox[1]
+# draw white base
+dr.text((tx, ty - ascent // 2), word, font=big_font, fill=(255, 255, 255, 255))
+# overlay violet gradient copy for vibrancy
+grad_copy = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+gdr = ImageDraw.Draw(grad_copy)
+for ch_i, ch in enumerate(word):
+    # per-character gradient: cyan -> violet
+    t = ch_i / max(1, len(word) - 1)
+    c = hsv2rgb(lerp(0.55, 0.72, t), 0.85, 1.0)
+    char_x = tx + dr.textlength(word[:ch_i], font=big_font)
+    gdr.text((char_x, ty - ascent // 2), ch, font=big_font, fill=(*c, 255))
+img = Image.alpha_composite(img, grad_copy)
+dr = ImageDraw.Draw(img, "RGBA")
+
+# tagline under wordmark
+tag = "LOCAL-FIRST VOICE AI · RUST"
+tag_font = font_reg(30)
+tag_y = ty - ascent // 2 + 128
+dr.text((tx, tag_y), tag, font=tag_font, fill=(150, 164, 190, 255))
+
+# ── feature chips (right column) ─────────────────────────────────────────
+
+chip_x = int(W * 0.62)
+chip_y_start = 120
+features = [
+    ("🧠", "Noxis Core brain — local LLM"),
+    ("🗣", "Streaming real-time voice (WS)"),
+    ("🎙", "Clone voices · 20+ TTS voices · 10 langs"),
+    ("🔒", "Consent, watermark, rate-limit"),
+    ("⚡", "Telegram Stars payments"),
+]
+chip_font = font_reg(27)
+row_h = 62
+for i, (icon, label) in enumerate(features):
+    y = chip_y_start + i * row_h
+    dr.rounded_rectangle([chip_x, y, chip_x + 500, y + 46], radius=23,
+                         fill=(255, 255, 255, 12), outline=(124, 92, 255, 90))
+    # label may be mixed (emoji renders as box in DejaVu); draw text only
+    dr.text((chip_x + 20, y + 9), f"  {label}", font=chip_font,
+            fill=(226, 232, 240, 245))
+
+# ── footer ───────────────────────────────────────────────────────────────
+
+foot = "https://github.com/mastergeeky1-cloud/anubis-core"
+foot_font = font_reg(24)
+dr.text((WAVE_X, H - 60), foot, font=foot_font, fill=(120, 134, 160, 220))
+
+# ── save ────────────────────────────────────────────────────────────────
+
+out = img.convert("RGB")
+out.save("/home/ubuntu/anubis-core/assets/banner.png")
+print("saved assets/banner.png", out.size)
