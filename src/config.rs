@@ -24,6 +24,7 @@ pub struct WhisperConfig {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
 pub struct TelegramConfig {
     pub token: String,
     /// "poll" (default) or "webhook". Webhook scales to multiple replicas
@@ -32,6 +33,17 @@ pub struct TelegramConfig {
     /// Only used when mode = "webhook".
     pub webhook_url: String,
     pub webhook_listen: String,
+}
+
+impl Default for TelegramConfig {
+    fn default() -> Self {
+        Self {
+            token: String::new(),
+            mode: "poll".into(),
+            webhook_url: String::new(),
+            webhook_listen: "127.0.0.1:8443".into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -67,6 +79,7 @@ pub struct DatabaseConfig {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
 pub struct LimitsConfig {
     pub max_audio_duration_secs: u32,
     pub max_text_chars: usize,
@@ -74,6 +87,19 @@ pub struct LimitsConfig {
     pub unlimited_mode: bool,
     pub cache_capacity: usize,
     pub max_concurrent_synth: usize,
+}
+
+impl Default for LimitsConfig {
+    fn default() -> Self {
+        Self {
+            max_audio_duration_secs: 60,
+            max_text_chars: 1000,
+            free_daily_credits: 30,
+            unlimited_mode: false,
+            cache_capacity: 512,
+            max_concurrent_synth: 2,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
