@@ -109,9 +109,10 @@ mod tests {
 
     fn test_db() -> Arc<Database> {
         let n = COUNTER.fetch_add(1, Ordering::SeqCst);
-        let path = format!("/tmp/anubis_mem_test_{n}.db");
+        let path = std::env::temp_dir().join(format!("anubis_mem_test_{n}.db"));
+        let path_str = path.to_str().expect("utf8 path").to_string();
         let _ = std::fs::remove_file(&path);
-        Arc::new(Database::open(&path, 4).expect("open"))
+        Arc::new(Database::open(&path_str, 4).expect("open"))
     }
 
     #[test]
