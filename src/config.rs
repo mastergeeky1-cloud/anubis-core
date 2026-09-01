@@ -26,6 +26,12 @@ pub struct WhisperConfig {
 #[derive(Debug, Clone, Deserialize)]
 pub struct TelegramConfig {
     pub token: String,
+    /// "poll" (default) or "webhook". Webhook scales to multiple replicas
+    /// behind a reverse proxy (set via ANUBIS_TELEGRAM_MODE=webhook).
+    pub mode: String,
+    /// Only used when mode = "webhook".
+    pub webhook_url: String,
+    pub webhook_listen: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -67,6 +73,7 @@ pub struct LimitsConfig {
     pub free_daily_credits: i32,
     pub unlimited_mode: bool,
     pub cache_capacity: usize,
+    pub max_concurrent_synth: usize,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -96,6 +103,15 @@ impl Config {
         // ── Secrets / endpoints: env overrides file ──
         if let Ok(tok) = std::env::var("ANUBIS_TELEGRAM_TOKEN") {
             cfg.telegram.token = tok;
+        }
+        if let Ok(mode) = std::env::var("ANUBIS_TELEGRAM_MODE") {
+            cfg.telegram.mode = mode;
+        }
+        if let Ok(u) = std::env::var("ANUBIS_WEBHOOK_URL") {
+            cfg.telegram.webhook_url = u;
+        }
+        if let Ok(l) = std::env::var("ANUBIS_WEBHOOK_LISTEN") {
+            cfg.telegram.webhook_listen = l;
         }
         if let Ok(u) = std::env::var("ANUBIS_LLM_URL") {
             cfg.llm.base_url = u;
@@ -135,6 +151,9 @@ impl Config {
         Self {
             telegram: TelegramConfig {
                 token: String::new(),
+                mode: "poll".into(),
+                webhook_url: String::new(),
+                webhook_listen: "127.0.0.1:8443".into(),
             },
             llm: LlmConfig {
                 base_url: "http://127.0.0.1:8080".into(),
@@ -170,6 +189,7 @@ impl Config {
                 free_daily_credits: 30,
                 unlimited_mode: false,
                 cache_capacity: 512,
+                max_concurrent_synth: 2,
             },
             audio: AudioConfig {
                 output_dir: "./audio_output".into(),

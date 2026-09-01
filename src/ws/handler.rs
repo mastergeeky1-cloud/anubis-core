@@ -57,7 +57,17 @@ pub fn router(state: AppState, cfg: WsServerConfig) -> axum::Router {
     });
     axum::Router::new()
         .route(crate::ws::DEFAULT_PATH, axum::routing::get(ws_upgrade))
+        .route("/metrics", axum::routing::get(metrics_scrape))
         .with_state(shared)
+}
+
+/// Prometheus-style metrics scrape endpoint.
+async fn metrics_scrape(State(shared): State<WsAppState>) -> axum::response::Response {
+    let body = shared.state.metrics.render();
+    axum::response::Response::builder()
+        .header("content-type", "text/plain; version=0.0.4")
+        .body(axum::body::Body::from(body))
+        .unwrap()
 }
 
 /// Serve forever; blocks the calling task until the listener errors.
@@ -125,6 +135,7 @@ impl Session {
 // ─── Core event loop ─────────────────────────────────────────────────────────
 
 async fn handle_ws(ws: WebSocket, shared: WsAppState) {
+    shared.state.metrics.inc("ws_connections_total");
     // Split the socket: one task owns the writer, this task owns the reader.
     let (mut writer, mut reader) = ws.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
@@ -277,8 +288,12 @@ async fn handle_text(out: &Outbound, session: &mut Session, shared: &WsShared, p
     // Optional: synthesize the reply as speech and stream opus chunks.
     if crate::tts::voices::find(&session.voice_id).is_some() {
         out.status("synthesizing");
-        match state.tts.synthesize_wav(&reply, &session.voice_id).await {
-            Ok(wav_path) => match crate::bot::handlers::synthesize_to_ogg(state, &wav_path).await {
+        match state
+            .worker_pool
+            .synthesize_tts(&reply, &session.voice_id)
+            .await
+        {
+            Ok(wav_path) => match state.worker_pool.convert_wav_to_ogg(&wav_path).await {
                 Ok(ogg) => {
                     for chunk in ogg.chunks(32 * 1024) {
                         out.send(OpReply::VoiceChunk, chunk);

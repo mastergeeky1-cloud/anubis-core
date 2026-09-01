@@ -25,6 +25,7 @@ use dashmap::DashMap;
 use std::sync::Arc;
 use teloxide::prelude::*;
 use teloxide::utils::command::BotCommands;
+use tracing::info;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OutMode {
@@ -68,6 +69,10 @@ pub struct AppState {
     /// Last AI reply text per user — lets the "🔊 Speak this" / "🎨 Voice
     /// Gallery" inline buttons re-synthesize the previous answer on demand.
     pub last_reply: Arc<DashMap<i64, String>>,
+    /// Bounded worker pool for synthesis tasks.
+    pub worker_pool: Arc<crate::worker_pool::WorkerPool>,
+    /// Runtime observability counters.
+    pub metrics: Arc<crate::metrics::Metrics>,
 }
 
 pub async fn run(state: AppState) -> anyhow::Result<()> {
@@ -115,6 +120,48 @@ pub async fn run(state: AppState) -> anyhow::Result<()> {
             ),
         );
 
+    let mode = &state.config.telegram.mode;
+    let mode = mode.trim().to_ascii_lowercase();
+
+    if mode == "webhook" {
+        let url = state.config.telegram.webhook_url.clone();
+        if url.trim().is_empty() {
+            anyhow::bail!(
+                "webhook mode requires ANUBIS_WEBHOOK_URL (e.g. https://anubis.example.com:8443/webhook)"
+            );
+        }
+        use teloxide::dispatching::update_listeners::webhooks;
+
+        let listen: std::net::SocketAddr = state
+            .config
+            .telegram
+            .webhook_listen
+            .parse()
+            .map_err(|e| anyhow::anyhow!("invalid ANUBIS_WEBHOOK_LISTEN: {e}"))?;
+        let public_url = url::Url::parse(&url)
+            .map_err(|e| anyhow::anyhow!("invalid ANUBIS_WEBHOOK_URL: {e}"))?;
+
+        info!("Telegram via webhook :: {url} (listen {listen})");
+
+        let listener =
+            webhooks::axum(bot.clone(), webhooks::Options::new(listen, public_url)).await?;
+
+        let mut dispatcher = Dispatcher::builder(bot, handler)
+            .dependencies(dptree::deps![state])
+            .enable_ctrlc_handler()
+            .build();
+        dispatcher
+            .dispatch_with_listener(
+                listener,
+                std::sync::Arc::new(|e: std::convert::Infallible| async move {
+                    tracing::error!("webhook listener error: {e:?}");
+                }),
+            )
+            .await;
+        return Ok(());
+    }
+
+    info!("Telegram via long-polling");
     Dispatcher::builder(bot, handler)
         .dependencies(dptree::deps![state])
         .default_handler(|_| async {})

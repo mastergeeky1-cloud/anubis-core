@@ -19,7 +19,7 @@ tokio              = { version = "1",    features = ["full"] }
 futures            = "0.3"
 
 # ── telegram ───────────────────────────────────────────────────────────────
-teloxide           = { version = "0.12", features = ["macros"] }
+teloxide           = { version = "0.12", features = ["macros", "webhooks-axum"] }
 
 # ── database (local SQLite, no external services) ───────────────────────────
 rusqlite           = { version = "0.31", features = ["bundled"] }
@@ -37,6 +37,7 @@ thiserror          = "2"
 
 # ── http client (talks to LOCAL sidecars: llama.cpp, Chatterbox) ────────────
 reqwest            = { version = "0.11", features = ["json", "multipart", "stream"] }
+url                = "2"
 
 # ── logging ────────────────────────────────────────────────────────────────
 tracing            = "0.1"

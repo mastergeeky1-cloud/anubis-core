@@ -52,61 +52,6 @@ fn ensure_user(state: &AppState, user_id: i64, username: Option<&str>) -> String
     user_lang(state, user_id)
 }
 
-/// Animated progress message: edits `msg_id` through the given stage labels one
-/// at a time (spinner char rotates) so the user sees real loading instead of a
-/// static "generating". `work` runs the actual task.
-async fn with_progress<F, Fut>(
-    bot: &Bot,
-    cid: ChatId,
-    msg_id: i32,
-    stages: &[&str],
-    work: F,
-) -> Fut::Output
-where
-    F: FnOnce() -> Fut,
-    Fut: std::future::Future,
-{
-    let spinners = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-    let stages: Vec<String> = stages.iter().map(|s| s.to_string()).collect();
-    let label = stages
-        .first()
-        .cloned()
-        .unwrap_or_else(|| "Working".to_string());
-    let mut tick = 0usize;
-    let mut last = String::new();
-    let handle = {
-        let bot = bot.clone();
-        let mut interval = tokio::time::interval(std::time::Duration::from_millis(220));
-        let start = tokio::time::Instant::now();
-        // Drive the spinner in the background while `work` runs.
-        tokio::spawn(async move {
-            loop {
-                let _ = interval.tick().await;
-                if start.elapsed().as_secs() > 60 {
-                    break; // safety: don't spin forever
-                }
-                let frame = spinners[tick % spinners.len()];
-                let text = format!("{} {}…", frame, label);
-                if text != last {
-                    let _ = bot
-                        .edit_message_text(cid, teloxide::types::MessageId(msg_id), text.clone())
-                        .await;
-                    last = text;
-                }
-                tick += 1;
-            }
-        })
-    };
-
-    let result = work().await;
-    handle.abort();
-    // Settle on a neutral placeholder; the caller overwrites with the real text.
-    let _ = bot
-        .edit_message_text(cid, teloxide::types::MessageId(msg_id), "⏳ Working…")
-        .await;
-    result
-}
-
 /// Send the ANUBIS banner image (if present) with a MarkdownV2 caption and the
 /// command palette. Falls back to a plain text message when the asset is missing.
 async fn send_banner(
@@ -129,6 +74,83 @@ async fn send_banner(
             .await?;
     }
     Ok(())
+}
+
+/// Render the marketplace catalog in a chat message.
+async fn cmd_shop(
+    bot: Bot,
+    cid: ChatId,
+    user_id: i64,
+    lang: &str,
+    state: &AppState,
+    s: &'static crate::i18n::Strings,
+) -> Result<(), teloxide::RequestError> {
+    let installed = installed_pack(state, user_id, lang);
+    let header = format!(
+        "🛍 *Voice Pack Marketplace*\n\n\
+         Browse curated voice packs and install one to activate its voice for \
+         your language. Installed packs appear with a ✅ and can be uninstalled.\n\n\
+         Currently installed: {}",
+        header_pack_display(&installed)
+    );
+    bot.send_message(cid, crate::i18n::md2(&header))
+        .parse_mode(ParseMode::MarkdownV2)
+        .reply_markup(keyboards::shop_keyboard(&installed))
+        .await?;
+    let _ = s;
+    Ok(())
+}
+
+/// The user's installed pack id: the recorded one if set, else inferred from
+/// the active voice when it belongs to a pack.
+fn installed_pack(state: &AppState, user_id: i64, lang: &str) -> String {
+    let recorded = state.db.installed_pack(user_id);
+    if !recorded.is_empty() {
+        return recorded;
+    }
+    let active = user_voice(state, user_id, lang);
+    crate::marketplace::pack_for_voice(&active)
+        .map(|p| p.id.to_string())
+        .unwrap_or_default()
+}
+
+/// Activate a marketplace pack: set the active voice to the pack's default for
+/// the user's language and record the pack as installed.
+fn install_pack(state: &AppState, user_id: i64, lang: &str, pack_id: &str) {
+    let voice = crate::marketplace::pack_voice(pack_id, lang).unwrap_or_default();
+    if !voice.is_empty() && crate::tts::voices::find(voice).is_some() {
+        let _ = state.db.set_active_voice(user_id, voice);
+    }
+    let _ = state.db.set_installed_pack(user_id, pack_id);
+    state.metrics.inc("marketplace_installs_total");
+    state.db.audit(
+        user_id,
+        "shop",
+        &format!("install pack={pack_id} lang={lang}"),
+    );
+}
+
+/// "✅ <Name>" for an installed pack, or "none (built-in default)".
+fn header_pack_display(installed: &str) -> String {
+    if installed.is_empty() {
+        "none (built-in default)".to_string()
+    } else {
+        let name = crate::marketplace::PACKS
+            .iter()
+            .find(|p| p.id == installed)
+            .map(|p| p.name)
+            .unwrap_or(installed);
+        let blurb = crate::marketplace::PACKS
+            .iter()
+            .find(|p| p.id == installed)
+            .map(|p| p.blurb)
+            .unwrap_or("");
+        if blurb.is_empty() {
+            format!("✅ {}", name)
+        } else {
+            format!("✅ {} — {}", name, blurb)
+        }
+    }
 }
 
 /// Centralized voice generation: resolves the active voice, checks cache +
@@ -171,13 +193,11 @@ async fn gen_voice(
     state
         .db
         .audit(user_id, "speak", &format!("voice={voice_id}"));
+    state.metrics.inc("speak_total");
+    state.metrics.inc("watermarks_total");
 
-    let stages = [s.loading_synth];
-    let wav_path = match with_progress(bot, cid, progress.id.0, &stages, || {
-        state.tts.synthesize_wav(text, voice_id)
-    })
-    .await
-    {
+    let synth_start = std::time::Instant::now();
+    let wav_path = match state.worker_pool.synthesize_tts(text, voice_id).await {
         Ok(p) => p,
         Err(e) => {
             error!("TTS error for user {user_id}: {e}");
@@ -186,7 +206,7 @@ async fn gen_voice(
             return Ok(());
         }
     };
-    let ogg_bytes = match synthesize_to_ogg(state, &wav_path).await {
+    let ogg_bytes = match state.worker_pool.convert_wav_to_ogg(&wav_path).await {
         Ok(b) => b,
         Err(e) => {
             error!("wav->ogg: {e}");
@@ -197,6 +217,9 @@ async fn gen_voice(
         }
     };
     let _ = bot.delete_message(cid, progress.id).await;
+    state
+        .metrics
+        .add_synth_time(synth_start.elapsed().as_millis() as u64);
     state.cache.insert(cache_key, ogg_bytes.clone());
     let mut req = bot.send_voice(cid, InputFile::memory(ogg_bytes));
     if let Some(cap) = caption {
@@ -224,6 +247,7 @@ async fn do_ask(
         bot.send_message(cid, s.brain_off).await?;
         return Ok(());
     }
+    state.metrics.inc("asks_total");
     let _ = bot.send_chat_action(cid, ChatAction::Typing).await;
     let thinking = bot.send_message(cid, s.loading_think).await?;
     state.db.audit(user_id, "ask", text);
@@ -389,6 +413,9 @@ pub async fn handle_command(
             bot.send_message(cid, "Choose a voice preset:")
                 .reply_markup(keyboards::presets_keyboard(&lang))
                 .await?;
+        }
+        Command::Shop => {
+            cmd_shop(bot, cid, user_id, &lang, &state, s).await?;
         }
         Command::Setvoice(id) => {
             let id = id.trim().to_string();
@@ -765,13 +792,8 @@ async fn do_myvoice(
     let _ = bot.send_chat_action(cid, ChatAction::UploadVoice).await;
     let thinking = bot.send_message(cid, s.loading_synth).await?;
     let wav_bytes = match state
-        .clone_engine
-        .synthesize(
-            text,
-            std::path::Path::new(&clone.wav_path),
-            lang,
-            &clone.ref_text,
-        )
+        .worker_pool
+        .synthesize_clone(text, &clone.wav_path, lang, &clone.ref_text)
         .await
     {
         Ok(b) => b,
@@ -797,7 +819,7 @@ async fn do_myvoice(
         bot.send_message(cid, s.tts_fail).await?;
         return Ok(());
     }
-    let ogg_bytes = match state.audio.wav_to_ogg(&tmp_wav).await {
+    let ogg_bytes = match state.worker_pool.convert_wav_to_ogg(&tmp_wav).await {
         Ok(b) => b,
         Err(e) => {
             error!("wav->ogg (clone): {e}");
@@ -811,20 +833,6 @@ async fn do_myvoice(
     let _ = bot.delete_message(cid, thinking.id).await;
     bot.send_voice(cid, InputFile::memory(ogg_bytes)).await?;
     Ok(())
-}
-
-/// Shared WAV->OGG step used by /speak and gen_voice.
-pub(crate) async fn synthesize_to_ogg(
-    state: &AppState,
-    wav_path: &std::path::Path,
-) -> crate::error::Result<Vec<u8>> {
-    let wav_bytes = tokio::fs::read(wav_path).await?;
-    crate::tts::remove_wav(wav_path).await;
-    let tmp_wav = state.audio.tmp_path("wav");
-    tokio::fs::write(&tmp_wav, &wav_bytes).await?;
-    let ogg = state.audio.wav_to_ogg(&tmp_wav).await?;
-    tokio::fs::remove_file(&tmp_wav).await.ok();
-    Ok(ogg)
 }
 
 // ─── voice message (clone sample) handler ─────────────────────────────────────
@@ -841,6 +849,7 @@ pub async fn handle_message(
     if state.db.is_banned(user_id) {
         return Ok(());
     }
+    state.metrics.inc("messages_total");
 
     // Tap-from-menu prompt: the user previously tapped an action with no text,
     // so the next plain message is that command's input. `mode` selects whether
@@ -1005,6 +1014,7 @@ pub async fn handle_callback(
     state: AppState,
 ) -> Result<(), teloxide::RequestError> {
     let user_id = q.from.id.0 as i64;
+    state.metrics.inc("callbacks_total");
     let Some(data) = q.data.as_deref() else {
         bot.answer_callback_query(q.id).await?;
         return Ok(());
@@ -1324,6 +1334,66 @@ pub async fn handle_callback(
             _ => {}
         }
         return Ok(());
+    }
+
+    // ── Voice Pack Marketplace ─────────────────────────────────────────────
+    if let Some(rest) = data.strip_prefix("market:") {
+        bot.answer_callback_query(&q.id).await?;
+        if rest == "list" {
+            let installed = installed_pack(&state, user_id, &lang);
+            let header = format!(
+                "🛍 *Voice Pack Marketplace*\n\nCurrently installed: {}",
+                header_pack_display(&installed)
+            );
+            if let Some(msg) = q.message {
+                bot.edit_message_text(msg.chat.id, msg.id, crate::i18n::md2(&header))
+                    .parse_mode(ParseMode::MarkdownV2)
+                    .reply_markup(keyboards::shop_keyboard(&installed))
+                    .await?;
+            }
+            return Ok(());
+        }
+        if let Some(pack_id) = rest.strip_prefix("install:") {
+            install_pack(&state, user_id, &lang, pack_id);
+            if let Some(msg) = q.message {
+                let name = crate::marketplace::PACKS
+                    .iter()
+                    .find(|p| p.id == pack_id)
+                    .map(|p| p.name)
+                    .unwrap_or(pack_id);
+                bot.edit_message_text(
+                    msg.chat.id,
+                    msg.id,
+                    format!("✅ Installed voice pack: *{}*", name),
+                )
+                .parse_mode(ParseMode::MarkdownV2)
+                .reply_markup(keyboards::shop_keyboard(pack_id))
+                .await?;
+            }
+            return Ok(());
+        }
+        if let Some(pack_id) = rest.strip_prefix("uninstall:") {
+            let _ = state
+                .db
+                .set_active_voice(user_id, crate::tts::voices::default_for_lang(&lang));
+            let _ = state.db.set_installed_pack(user_id, "");
+            state.db.audit(
+                user_id,
+                "shop",
+                &format!("uninstall pack={pack_id} lang={lang}"),
+            );
+            state.metrics.inc("marketplace_installs_total");
+            if let Some(msg) = q.message {
+                bot.edit_message_text(
+                    msg.chat.id,
+                    msg.id,
+                    "🗑 Removed voice pack. Your voice is back to the default.",
+                )
+                .reply_markup(keyboards::shop_keyboard(""))
+                .await?;
+            }
+            return Ok(());
+        }
     }
 
     // ── Text/Voice mode choice ───────────────────────────────────────────────
@@ -1770,7 +1840,7 @@ async fn handle_voice_conversation(
     let _ = bot
         .edit_message_text(cid, thinking.id, s.loading_synth)
         .await;
-    let wav = match state.tts.synthesize_wav(&reply, &voice_id).await {
+    let wav = match state.worker_pool.synthesize_tts(&reply, &voice_id).await {
         Ok(p) => p,
         Err(e) => {
             error!("voice conv tts error: {e}");
@@ -1779,7 +1849,7 @@ async fn handle_voice_conversation(
             return Ok(());
         }
     };
-    let ogg = match synthesize_to_ogg(&state, &wav).await {
+    let ogg = match state.worker_pool.convert_wav_to_ogg(&wav).await {
         Ok(b) => b,
         Err(e) => {
             error!("voice conv wav->ogg: {e}");

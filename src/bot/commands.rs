@@ -43,6 +43,9 @@ pub enum Command {
     #[command(description = "✨ Browse curated voice presets")]
     Presets,
 
+    #[command(description = "🛍 Voice Pack Marketplace: install curated voice packs")]
+    Shop,
+
     // ── Settings & account ─────────────────────────────────────────────────
     #[command(description = "🌐 Change interface language")]
     Lang,

@@ -138,6 +138,30 @@ pub fn presets_keyboard(lang: &str) -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new(buttons)
 }
 
+/// Voice Pack Marketplace catalog. Each pack shows its name + an Install /
+/// Uninstall toggle depending on whether it's the user's active installed pack.
+pub fn shop_keyboard(installed_pack: &str) -> InlineKeyboardMarkup {
+    use crate::marketplace::PACKS;
+    let mut buttons: Vec<Vec<InlineKeyboardButton>> = PACKS
+        .iter()
+        .map(|p| {
+            let label = if p.id == installed_pack {
+                format!("{} {} — ✅ Installed", p.emoji, p.name)
+            } else {
+                format!("{} {} — ⬇️ Install", p.emoji, p.name)
+            };
+            let cb = if p.id == installed_pack {
+                format!("market:uninstall:{}", p.id)
+            } else {
+                format!("market:install:{}", p.id)
+            };
+            vec![InlineKeyboardButton::callback(label, cb)]
+        })
+        .collect();
+    buttons.push(vec![InlineKeyboardButton::callback("🔙 Back", "menu:home")]);
+    InlineKeyboardMarkup::new(buttons)
+}
+
 /// Clones management — one Delete button per clone.
 pub fn clones_keyboard(clones: &[crate::db::VoiceClone]) -> InlineKeyboardMarkup {
     let buttons: Vec<Vec<InlineKeyboardButton>> = clones

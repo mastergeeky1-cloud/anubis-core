@@ -50,7 +50,9 @@ CREATE TABLE IF NOT EXISTS users (
     daily_reset  TEXT    NOT NULL DEFAULT '',
     active_voice TEXT    NOT NULL DEFAULT 'en_US-amy-medium',
     consent_at   TEXT,
-    banned       INTEGER NOT NULL DEFAULT 0
+    banned       INTEGER NOT NULL DEFAULT 0,
+    memory       TEXT    NOT NULL DEFAULT '[]',
+    installed_pack TEXT  NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS voice_clones (
@@ -98,6 +100,20 @@ impl Database {
     pub fn open(path: &str, max_size: u32) -> Result<Self> {
         let manager = SqliteConnectionManager::file(path).with_init(|c| {
             c.execute_batch(MIGRATION)?;
+            // Idempotent migrations for databases created before a column was
+            // added to `users` (CREATE TABLE IF NOT EXISTS won't alter existing
+            // tables).
+            let has_pack: i64 = c.query_row(
+                "SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='installed_pack'",
+                [],
+                |r| r.get(0),
+            )?;
+            if has_pack == 0 {
+                c.execute(
+                    "ALTER TABLE users ADD COLUMN installed_pack TEXT NOT NULL DEFAULT ''",
+                    [],
+                )?;
+            }
             Ok(())
         });
         let pool = Pool::builder()
@@ -174,6 +190,29 @@ impl Database {
             params![voice_id, user_id],
         )?;
         Ok(())
+    }
+
+    /// Record which marketplace pack a user installed ('' = none).
+    pub fn set_installed_pack(&self, user_id: i64, pack_id: &str) -> Result<()> {
+        let c = self.conn()?;
+        c.execute(
+            "UPDATE users SET installed_pack = ?1 WHERE id = ?2",
+            params![pack_id, user_id],
+        )?;
+        Ok(())
+    }
+
+    /// The marketplace pack id the user currently has installed, or "".
+    pub fn installed_pack(&self, user_id: i64) -> String {
+        let Ok(c) = self.conn() else {
+            return String::new();
+        };
+        c.query_row(
+            "SELECT installed_pack FROM users WHERE id = ?1",
+            params![user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or_default()
     }
 
     pub fn has_consent(&self, user_id: i64) -> bool {
@@ -386,5 +425,31 @@ impl Database {
             params![clone_id, user_id],
         )?;
         Ok(n > 0)
+    }
+
+    /// Persist the full conversation memory JSON for a user. Upserts the user
+    /// row so memory works even for users never seen by `upsert_user`.
+    pub fn save_memory(&self, user_id: i64, memory_json: &str) -> Result<()> {
+        let c = self.conn()?;
+        c.execute(
+            "INSERT INTO users (id, memory) VALUES (?1, ?2)
+             ON CONFLICT(id) DO UPDATE SET memory = excluded.memory",
+            params![user_id, memory_json],
+        )?;
+        Ok(())
+    }
+
+    /// Load the conversation memory JSON for a user (returns "[]" if missing).
+    pub fn load_memory(&self, user_id: i64) -> Result<String> {
+        let c = self.conn()?;
+        let res = c.query_row(
+            "SELECT COALESCE(memory, '[]') FROM users WHERE id = ?1",
+            params![user_id],
+            |r| r.get::<_, String>(0),
+        );
+        match res {
+            Ok(s) => Ok(s),
+            Err(_) => Ok("[]".to_string()),
+        }
     }
 }

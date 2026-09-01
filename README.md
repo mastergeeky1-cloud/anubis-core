@@ -190,17 +190,29 @@ See [SECURITY.md](./SECURITY.md). Highlights:
 
 ## Scaling Roadmap
 
-1. **Persist memory** — move the in-memory conversation store to SQLite (WAL),
-   with TTL, so context survives restarts and replicas can share it.
-2. **Webhook** — swap long-poll for a webhook behind Caddy/nginx to scale
-   replicas and drop poll overhead.
-3. **Worker pool** for synthesis — offload heavy TTS/clone jobs to a queue so
-   slow clone synthesis never blocks chat.
-4. **Observability** — export tracing to Prometheus/Jaeger; track per-step
-   latency, queue depth, error rates.
-5. **Neural watermark** — pair the LSB baseline with a robust model watermark
-   for anti-removal.
-6. **Voice pack marketplace** — a browsable install/uninstall catalog.
+All six items are implemented in v2.1.0 ✅
+
+1. ✅ **Persist memory** — conversation store backed by SQLite (WAL);
+   per-user memory JSON survives restarts.
+2. ✅ **Webhook mode** — set `ANUBIS_TELEGRAM_MODE=webhook` +
+   `ANUBIS_WEBHOOK_URL`; swap long-poll for a webhook behind Caddy/nginx.
+3. ✅ **Worker pool** — bounded semaphores for TTS + clone synthesis so
+   heavy jobs never block chat.
+4. ✅ **Observability** — atomic Prometheus counters (`/metrics` on the
+   WebSocket server) + structured `tracing` logs.
+5. ✅ **Neural watermark** — 3×-redundant payload blocks, CRC-32, and
+   majority-vote decoding for anti-removal robustness.
+6. ✅ **Voice pack marketplace** — `/shop` to browse curated packs,
+   install/uninstall via inline callbacks.
+
+### Status
+
+| Item | Status |
+|------|--------|
+| v2.1.0 released | `cargo build --release` ✅ |
+| fmt / clippy (`-D warnings`) | ✅ |
+| test suite (27 tests) | ✅ |
+| CI (fmt/clippy/test on ubuntu/macos/windows) | ✅ |
 
 ## License
 

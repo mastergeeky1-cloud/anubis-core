@@ -6,11 +6,14 @@ mod config;
 mod db;
 mod error;
 mod i18n;
+mod marketplace;
 mod memory;
+mod metrics;
 mod noxis;
 mod security;
 mod tts;
 mod whisper;
+mod worker_pool;
 mod ws;
 
 use anyhow::Result;
@@ -34,6 +37,7 @@ async fn main() -> Result<()> {
     );
 
     let database = db::Database::open(&cfg.database.path, cfg.database.pool_max)?;
+    let database = Arc::new(database);
 
     // TTS router: Piper (CPU) + Kokoro (local sidecar, CPU). Both permissive-licensed.
     let piper = tts::PiperTts::new(cfg.tts.piper_binary.clone(), cfg.tts.voices_dir.clone());
@@ -81,8 +85,8 @@ async fn main() -> Result<()> {
     ));
     info!("Whisper voice input: enabled={}", cfg.whisper.enabled);
 
-    // Per-user conversation memory for Noxis Core.
-    let memory = Arc::new(memory::ConversationStore::new(12));
+    // Per-user conversation memory for Noxis Core (persisted in SQLite).
+    let memory = Arc::new(memory::ConversationStore::new(database.clone(), 12));
 
     let rate_limiter = Arc::new(security::RateLimiter::new(
         cfg.security.rate_speak_per_min,
@@ -91,8 +95,19 @@ async fn main() -> Result<()> {
     let watermark = Arc::new(security::Watermarker::new(cfg.security.watermark_enabled));
     let cache = Arc::new(cache::AudioCache::new(cfg.limits.cache_capacity));
 
+    let worker_pool = Arc::new(worker_pool::WorkerPool::new(
+        tts_router.clone(),
+        clone_engine.clone(),
+        audio.clone(),
+        worker_pool::WorkerPoolConfig {
+            max_synth: cfg.limits.max_concurrent_synth,
+            max_convert: 2,
+        },
+    ));
+    let metrics = metrics::Metrics::new();
+
     let state = bot::AppState {
-        db: Arc::new(database),
+        db: database,
         tts: tts_router,
         clone_engine,
         noxis,
@@ -105,6 +120,8 @@ async fn main() -> Result<()> {
         whisper,
         memory,
         last_reply: Arc::new(dashmap::DashMap::new()),
+        worker_pool,
+        metrics,
     };
 
     // Real-time opcode WebSocket transport (alongside the Telegram bot).
