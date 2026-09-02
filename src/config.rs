@@ -73,6 +73,7 @@ pub struct DatabaseConfig {
 pub struct LimitsConfig {
     pub max_text_chars: usize,
     pub max_concurrent_synth: usize,
+    pub free_daily: i32,
 }
 
 impl Default for LimitsConfig {
@@ -80,6 +81,7 @@ impl Default for LimitsConfig {
         Self {
             max_text_chars: 1000,
             max_concurrent_synth: 2,
+            free_daily: 3,
         }
     }
 }
@@ -172,6 +174,7 @@ impl Config {
             limits: LimitsConfig {
                 max_text_chars: 1000,
                 max_concurrent_synth: 2,
+                free_daily: 3,
             },
             audio: AudioConfig {
                 output_dir: "./audio_output".into(),

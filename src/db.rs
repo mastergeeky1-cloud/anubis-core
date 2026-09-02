@@ -11,6 +11,20 @@ pub struct Database {
     pool: Pool<SqliteConnectionManager>,
 }
 
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct UserRow {
+    pub id: i64,
+    pub username: Option<String>,
+    pub lang: String,
+    pub credits: i32,
+    pub daily_used: i32,
+    pub daily_reset: String,
+    pub active_voice: String,
+    pub teacher_mode: bool,
+    pub installed_pack: String,
+}
+
 const MIGRATION: &str = "
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
@@ -212,6 +226,111 @@ impl Database {
             Ok(s) => Ok(s),
             Err(_) => Ok("[]".to_string()),
         }
+    }
+
+    /// Fetch the full user row.
+    pub fn get_user(&self, user_id: i64) -> Result<Option<UserRow>> {
+        let c = self.conn()?;
+        let mut stmt = c.prepare(
+            "SELECT id, username, lang, credits, daily_used, daily_reset,
+                    active_voice, teacher_mode, installed_pack
+             FROM users WHERE id = ?1",
+        )?;
+        let mut rows = stmt.query_map(params![user_id], |row| {
+            Ok(UserRow {
+                id: row.get(0)?,
+                username: row.get(1)?,
+                lang: row.get(2)?,
+                credits: row.get(3)?,
+                daily_used: row.get(4)?,
+                daily_reset: row.get(5)?,
+                active_voice: row.get(6)?,
+                teacher_mode: row.get(7)?,
+                installed_pack: row.get(8)?,
+            })
+        })?;
+        match rows.next() {
+            Some(r) => Ok(Some(r?)),
+            None => Ok(None),
+        }
+    }
+
+    // ── Credits / Payments ────────────────────────────────────────────────
+
+    /// Spend a daily free credit. Returns true if a credit was consumed,
+    /// false if the daily quota is exhausted (and not in unlimited mode).
+    pub fn consume_credit(&self, user_id: i64, free_daily: i32, unlimited: bool) -> Result<bool> {
+        let c = self.conn()?;
+        let today = Utc::now().format("%Y-%m-%d").to_string();
+
+        // Reset daily counter if the day rolled over.
+        c.execute(
+            "UPDATE users SET daily_used = 0, daily_reset = ?1
+             WHERE id = ?2 AND daily_reset != ?1",
+            params![today, user_id],
+        )?;
+
+        if unlimited {
+            return Ok(true);
+        }
+
+        let used: i32 = c
+            .query_row(
+                "SELECT daily_used FROM users WHERE id = ?1",
+                params![user_id],
+                |r| r.get(0),
+            )
+            .unwrap_or(0);
+
+        if used >= free_daily {
+            return Ok(false);
+        }
+
+        c.execute(
+            "UPDATE users SET daily_used = daily_used + 1 WHERE id = ?1",
+            params![user_id],
+        )?;
+        Ok(true)
+    }
+
+    /// Grant bonus credits (from a Stars purchase or admin grant).
+    pub fn add_credits(&self, user_id: i64, amount: i32, reason: &str) -> Result<()> {
+        let c = self.conn()?;
+        c.execute(
+            "UPDATE users SET credits = credits + ?1 WHERE id = ?2",
+            params![amount, user_id],
+        )?;
+        c.execute(
+            "INSERT INTO credit_log (user_id, delta, reason, created_at)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![user_id, amount, reason, Utc::now().to_rfc3339()],
+        )?;
+        Ok(())
+    }
+
+    /// Record a Telegram Stars payment (idempotent on charge_id).
+    pub fn record_payment(
+        &self,
+        user_id: i64,
+        charge_id: &str,
+        payload: &str,
+        credits: i32,
+        stars: i32,
+    ) -> Result<()> {
+        let c = self.conn()?;
+        c.execute(
+            "INSERT OR IGNORE INTO payments (charge_id, payload, user_id, credits, stars, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                charge_id,
+                payload,
+                user_id,
+                credits,
+                stars,
+                Utc::now().to_rfc3339()
+            ],
+        )?;
+        Ok(())
     }
 }
 

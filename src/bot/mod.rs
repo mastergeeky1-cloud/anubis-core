@@ -56,7 +56,10 @@ pub struct AppState {
 
 pub async fn run(state: AppState) -> anyhow::Result<()> {
     use commands::Command;
-    use handlers::{handle_callback, handle_command, handle_message};
+    use handlers::{
+        handle_callback, handle_command, handle_message, handle_pre_checkout,
+        handle_successful_payment,
+    };
 
     let bot = Bot::new(state.config.telegram.token.clone());
     bot.set_my_commands(Command::bot_commands()).await?;
@@ -72,6 +75,13 @@ pub async fn run(state: AppState) -> anyhow::Result<()> {
                 ),
         )
         .branch(
+            Update::filter_message()
+                .filter(|msg: Message| msg.successful_payment().is_some())
+                .endpoint(|bot: Bot, msg: Message, st: AppState| async move {
+                    handle_successful_payment(bot, msg, st).await
+                }),
+        )
+        .branch(
             Update::filter_message().endpoint(|bot: Bot, msg: Message, st: AppState| async move {
                 handle_message(bot, msg, st).await
             }),
@@ -82,7 +92,12 @@ pub async fn run(state: AppState) -> anyhow::Result<()> {
                     handle_callback(bot, q, st).await
                 },
             ),
-        );
+        )
+        .branch(Update::filter_pre_checkout_query().endpoint(
+            |bot: Bot, q: PreCheckoutQuery, st: AppState| async move {
+                handle_pre_checkout(bot, q, st).await
+            },
+        ));
 
     let mode = &state.config.telegram.mode;
     let mode = mode.trim().to_ascii_lowercase();

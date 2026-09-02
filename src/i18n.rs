@@ -33,10 +33,20 @@ pub struct Strings {
 
     // Loading
     pub loading_think: &'static str,
+    pub loading_synth: &'static str,
 
     // Voice gallery
     pub voices_header: &'static str,
     pub listen_hint: &'static str,
+
+    // Credits / Payments
+    pub credits_info: &'static str,
+    pub no_credits: &'static str,
+    pub upgrade_header: &'static str,
+    pub upgrade_info: &'static str,
+    pub payment_success: &'static str,
+    pub payment_failed: &'static str,
+    pub mystats_header: &'static str,
 }
 
 pub fn get(lang: &str) -> &'static Strings {
@@ -84,9 +94,20 @@ static EN: Strings = Strings {
     btn_reset: "🔄 Reset",
 
     loading_think: "🧠 Thinking…",
+    loading_synth: "Synthesizing voice…",
 
     voices_header: "🎙 <b>Available Voices</b>\n\nTap a voice to select it as your teacher's voice:",
     listen_hint: "🔊 Tap a voice to hear it",
+    credits_info: "⭐ Your credits: <b>{credits}</b>
+📅 Daily usage: <b>{used}/3</b> free",
+    no_credits: "❌ No credits remaining. Use /upgrade to buy more with Telegram Stars.",
+    upgrade_header: "💳 <b>Upgrade with Telegram Stars</b>",
+    upgrade_info: "• 50 credits = 50 Telegram Stars
+• Credits never expire
+• Use them to ask questions and hear speech",
+    payment_success: "✅ Payment received! {credits} credits added to your account.",
+    payment_failed: "❌ Payment failed. Please try again.",
+    mystats_header: "📊 <b>Your Stats</b>",
 };
 
 static AR: Strings = Strings {
@@ -118,9 +139,20 @@ static AR: Strings = Strings {
     btn_reset: "🔄 مسح",
 
     loading_think: "🧠 يفكر…",
+    loading_synth: "… جاري توليد الصوت",
 
     voices_header: "🎙 <b>الأصوات المتاحة</b>\n\nاضغط على صوت لاختياره كصوت المعلم:",
     listen_hint: "🔊 اضغط على صوت لسماعه",
+    credits_info: "⭐ رصيدك: <b>{credits}</b>
+📅 الاستخدام اليومي: <b>{used}/3</b> مجاني",
+    no_credits: "❌ لا يوجد رصيد. استخدم /upgrade لشراء المزيد.",
+    upgrade_header: "💳 <b>ترقية بـ Telegram Stars</b>",
+    upgrade_info: "• 50 رصيد = 50 نجمة تيليجرام
+• الرصيد لا ينتهي
+• استخدمه للأسئلة والكلام",
+    payment_success: "✅ تم الدفع! تمت إضافة {credits} رصيد.",
+    payment_failed: "❌ فشل الدفع. حاول مرة أخرى.",
+    mystats_header: "📊 <b>إحصائياتك</b>",
     unknown_command: "❓ <b>أمر غير معروف.</b> إليك ما يمكنني فعله:",
 };
 
@@ -153,9 +185,20 @@ static IT: Strings = Strings {
     btn_reset: "🔄 Reset",
 
     loading_think: "🧠 Sto pensando…",
+    loading_synth: "… Sintesi vocale in corso",
 
     voices_header: "🎙 <b>Voci Disponibili</b>\n\nTocca una voce per impostarla come voce dell'insegnante:",
     listen_hint: "🔊 Tocca una voce per ascoltarla",
+    credits_info: "⭐ I tuoi crediti: <b>{credits}</b>
+📅 Uso giornaliero: <b>{used}/3</b> gratuiti",
+    no_credits: "❌ Nessun credito. Usa /upgrade per acquistarne.",
+    upgrade_header: "💳 <b>Aggiorna con Telegram Stars</b>",
+    upgrade_info: "• 50 crediti = 50 Telegram Stars
+• I crediti non scadono
+• Usali per domande e parlato",
+    payment_success: "✅ Pagamento ricevuto! {credits} crediti aggiunti.",
+    payment_failed: "❌ Pagamento fallito. Riprova.",
+    mystats_header: "📊 <b>Le tue statistiche</b>",
     unknown_command: "❓ <b>Comando sconosciuto.</b> Ecco cosa posso fare:",
 };
 
@@ -188,9 +231,20 @@ static FR: Strings = Strings {
     btn_reset: "🔄 Reset",
 
     loading_think: "🧠 Je réfléchis…",
+    loading_synth: "… Synthèse vocale en cours",
 
     voices_header: "🎙 <b>Voix Disponibles</b>\n\nTouchez une voix pour la définir :",
     listen_hint: "🔊 Touchez une voix pour l'écouter",
+    credits_info: "⭐ Vos crédits : <b>{credits}</b>
+📅 Utilisation quotidienne : <b>{used}/3</b> gratuits",
+    no_credits: "❌ Aucun crédit. Utilisez /upgrade pour en acheter.",
+    upgrade_header: "💳 <b>Mise à niveau avec Telegram Stars</b>",
+    upgrade_info: "• 50 crédits = 50 Telegram Stars
+• Les crédits n'expirent pas
+• Utilisez-les pour questions et parole",
+    payment_success: "✅ Paiement reçu ! {credits} crédits ajoutés.",
+    payment_failed: "❌ Paiement échoué. Réessayez.",
+    mystats_header: "📊 <b>Vos statistiques</b>",
     unknown_command: "❓ <b>Commande inconnue.</b> Voici ce que je peux faire:",
 };
 
@@ -223,9 +277,20 @@ static ES: Strings = Strings {
     btn_reset: "🔄 Reset",
 
     loading_think: "🧠 Pensando…",
+    loading_synth: "… Sintetizando voz",
 
     voices_header: "🎙 <b>Voces Disponibles</b>\n\nToca una voz para seleccionarla:",
     listen_hint: "🔊 Toca una voz para escucharla",
+    credits_info: "⭐ Tus créditos: <b>{credits}</b>
+📅 Uso diario: <b>{used}/3</b> gratuitos",
+    no_credits: "❌ Sin créditos. Usa /upgrade para comprar más.",
+    upgrade_header: "💳 <b>Mejora con Telegram Stars</b>",
+    upgrade_info: "• 50 créditos = 50 Telegram Stars
+• Los créditos no expiran
+• Úsalos para preguntas y voz",
+    payment_success: "✅ ¡Pago recibido! {credits} créditos añadidos.",
+    payment_failed: "❌ Pago fallido. Intenta de nuevo.",
+    mystats_header: "📊 <b>Tus estadísticas</b>",
     unknown_command: "❓ <b>Comando desconocido.</b> Esto es lo que puedo hacer:",
 };
 
@@ -258,9 +323,20 @@ static DE: Strings = Strings {
     btn_reset: "🔄 Reset",
 
     loading_think: "🧠 Ich denke…",
+    loading_synth: "… Sprachausgabe wird erstellt",
 
     voices_header: "🎙 <b>Verfügbare Stimmen</b>\n\nTippe eine Stimme zum Auswählen:",
     listen_hint: "🔊 Tippe eine Stimme zum Anhören",
+    credits_info: "⭐ Deine Credits: <b>{credits}</b>
+📅 Tagesnutzung: <b>{used}/3</b> kostenlos",
+    no_credits: "❌ Keine Credits. Nutze /upgrade zum Kaufen.",
+    upgrade_header: "💳 <b>Aufrüsten mit Telegram Stars</b>",
+    upgrade_info: "• 50 Credits = 50 Telegram Stars
+• Credits laufen nicht ab
+• Nutze sie für Fragen und Sprache",
+    payment_success: "✅ Zahlung erhalten! {credits} Credits hinzugefügt.",
+    payment_failed: "❌ Zahlung fehlgeschlagen. Erneut versuchen.",
+    mystats_header: "📊 <b>Deine Statistiken</b>",
     unknown_command: "❓ <b>Unbekannter Befehl.</b> Hier ist, was ich kann:",
 };
 
@@ -293,9 +369,20 @@ static RU: Strings = Strings {
     btn_reset: "🔄 Сброс",
 
     loading_think: "🧠 Думаю…",
+    loading_synth: "… Синтез голоса",
 
     voices_header: "🎙 <b>Доступные голоса</b>\n\nНажмите голос для выбора:",
     listen_hint: "🔊 Нажмите голос чтобы услышать",
+    credits_info: "⭐ Ваши кредиты: <b>{credits}</b>
+📅 Использовано сегодня: <b>{used}/3</b> бесплатно",
+    no_credits: "❌ Нет кредитов. Используйте /upgrade для покупки.",
+    upgrade_header: "💳 <b>Улучшение за Telegram Stars</b>",
+    upgrade_info: "• 50 кредитов = 50 Telegram Stars
+• Кредиты не истекают
+• Используйте для вопросов и речи",
+    payment_success: "✅ Оплата получена! {credits} кредитов добавлено.",
+    payment_failed: "❌ Оплата не удалась. Попробуйте снова.",
+    mystats_header: "📊 <b>Ваша статистика</b>",
     unknown_command: "❓ <b>Неизвестная команда.</b> Вот что я могу:",
 };
 
@@ -328,9 +415,20 @@ static HI: Strings = Strings {
     btn_reset: "🔄 रीसेट",
 
     loading_think: "🧠 सोच रहा हूँ…",
+    loading_synth: "… आवाज़ बन रही है",
 
     voices_header: "🎙 <b>उपलब्ध आवाज़ें</b>\n\nचुनने के लिए आवाज़ टैप करें:",
     listen_hint: "🔊 सुनने के लिए टैप करें",
+    credits_info: "⭐ आपके क्रेडिट: <b>{credits}</b>
+📅 दैनिक उपयोग: <b>{used}/3</b> मुफ्त",
+    no_credits: "❌ कोई क्रेडिट नहीं। /upgrade से खरीदें।",
+    upgrade_header: "💳 <b>Telegram Stars से अपग्रेड करें</b>",
+    upgrade_info: "• 50 क्रेडिट = 50 Telegram Stars
+• क्रेडिट कभी समाप्त नहीं होते
+• प्रश्नों और आवाज़ के लिए उपयोग करें",
+    payment_success: "✅ भुगतान प्राप्त! {credits} क्रेडिट जोड़े गए।",
+    payment_failed: "❌ भुगतान विफल। फिर से प्रयास करें।",
+    mystats_header: "📊 <b>आपके आँकड़े</b>",
     unknown_command: "❓ <b>अज्ञात कमांड।</b> मैं यह कर सकता हूँ:",
 };
 
@@ -363,9 +461,20 @@ static TR: Strings = Strings {
     btn_reset: "🔄 Sıfırla",
 
     loading_think: "🧠 Düşünüyorum…",
+    loading_synth: "… Ses oluşturuluyor",
 
     voices_header: "🎙 <b>Mevcut Sesler</b>\n\nSeçmek için bir sese dokunun:",
     listen_hint: "🔊 Dinlemek için sese dokunun",
+    credits_info: "⭐ Kredileriniz: <b>{credits}</b>
+📅 Günlük kullanım: <b>{used}/3</b> ücretsiz",
+    no_credits: "❌ Kredi yok. /upgrade ile satın alın.",
+    upgrade_header: "💳 <b>Telegram Stars ile Yükseltin</b>",
+    upgrade_info: "• 50 kredi = 50 Telegram Stars
+• Krediler asla dolmaz
+• Sorular ve ses için kullanın",
+    payment_success: "✅ Ödeme alındı! {credits} kredi eklendi.",
+    payment_failed: "❌ Ödeme başarısız. Tekrar deneyin.",
+    mystats_header: "📊 <b>İstatistikleriniz</b>",
     unknown_command: "❓ <b>Bilinmeyen komut.</b> Yapabildiklerim:",
 };
 
@@ -398,9 +507,20 @@ static PT: Strings = Strings {
     btn_reset: "🔄 Reset",
 
     loading_think: "🧠 Pensando…",
+    loading_synth: "… Sintetizando voz",
 
     voices_header: "🎙 <b>Vozes Disponíveis</b>\n\nToque para selecionar uma voz:",
     listen_hint: "🔊 Toque para ouvir",
+    credits_info: "⭐ Seus créditos: <b>{credits}</b>
+📅 Uso diário: <b>{used}/3</b> gratuitos",
+    no_credits: "❌ Sem créditos. Use /upgrade para comprar.",
+    upgrade_header: "💳 <b>Atualizar com Telegram Stars</b>",
+    upgrade_info: "• 50 créditos = 50 Telegram Stars
+• Créditos não expiram
+• Use para perguntas e fala",
+    payment_success: "✅ Pagamento recebido! {credits} créditos adicionados.",
+    payment_failed: "❌ Pagamento falhou. Tente novamente.",
+    mystats_header: "📊 <b>Suas estatísticas</b>",
     unknown_command: "❓ <b>Comando desconhecido.</b> Aqui está o que posso fazer:",
 };
 

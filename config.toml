@@ -42,6 +42,7 @@ pool_max = 8
 [limits]
 max_text_chars          = 1000
 max_concurrent_synth    = 2
+free_daily              = 3
 
 [audio]
 # Temporary and output directory for audio processing

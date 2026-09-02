@@ -32,4 +32,14 @@ pub enum Command {
 
     #[command(description = "🔄 Reset conversation: /reset")]
     Reset,
+
+    // ── Account ─────────────────────────────────────────────────────────────
+    #[command(description = "⭐ Check your credits and daily usage")]
+    Credits,
+
+    #[command(description = "💳 Buy more credits with Telegram Stars")]
+    Upgrade,
+
+    #[command(description = "📊 Your usage stats")]
+    Mystats,
 }
