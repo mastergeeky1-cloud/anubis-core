@@ -19,7 +19,7 @@ use crate::whisper::WhisperClient;
 use dashmap::DashMap;
 use std::sync::Arc;
 use teloxide::prelude::*;
-use teloxide::utils::command::BotCommands;
+
 use tracing::info;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,7 +62,20 @@ pub async fn run(state: AppState) -> anyhow::Result<()> {
     };
 
     let bot = Bot::new(state.config.telegram.token.clone());
-    bot.set_my_commands(Command::bot_commands()).await?;
+    use teloxide::types::BotCommand;
+    let menu_commands = vec![
+        BotCommand::new("start", "🎓 Start the voice teacher"),
+        BotCommand::new("ask", "🧠 Ask your teacher a question"),
+        BotCommand::new("speak", "🔊 Hear text spoken aloud"),
+        BotCommand::new("voices", "🎙 Choose a voice"),
+        BotCommand::new("lang", "🌐 Change language"),
+        BotCommand::new("teacher", "🎓 Toggle teacher mode (on|off|status)"),
+        BotCommand::new("reset", "🔄 Clear conversation memory"),
+        BotCommand::new("credits", "⭐ Your credits"),
+        BotCommand::new("upgrade", "💳 Buy credits with Telegram Stars"),
+        BotCommand::new("help", "❓ Show help"),
+    ];
+    bot.set_my_commands(menu_commands).await?;
 
     let handler = dptree::entry()
         .branch(

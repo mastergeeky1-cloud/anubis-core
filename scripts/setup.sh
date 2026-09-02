@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# ANUBIS Core — local model + sidecar setup (fully offline-capable).
+# ANUBIS Voice Teacher — local model + sidecar setup (fully offline-capable).
 # Downloads only OPEN-SOURCE, PERMISSIVELY-LICENSED components:
 #   • Piper (MIT) voice models
 #   • Kokoro (Apache-2.0) via a tiny local server
-#   • Chatterbox-Multilingual (MIT) clone server
 #   • llama.cpp server + a small GGUF LLM for Noxis Core
 #
 # Edit the LLM_MODEL url below to your preferred GGUF.
@@ -12,11 +11,10 @@ cd "$(dirname "$0")"
 
 PIPER_DIR="./voices"
 KOKORO_DIR="./kokoro"
-CLONE_DIR="./clone_server"
 LLM_DIR="./llm"
 
 echo "==> Creating dirs"
-mkdir -p "$PIPER_DIR" "$KOKORO_DIR" "$CLONE_DIR" "$LLM_DIR" ./clones ./audio_output
+mkdir -p "$PIPER_DIR" "$KOKORO_DIR" "$LLM_DIR" ./audio_output
 
 echo "==> Piper voices (MIT)"
 # Piper voice packs: each is <lang>/<id>.onnx + .onnx.json
@@ -111,36 +109,6 @@ PY
 EOF
 chmod +x "$KOKORO_DIR/serve.sh"
 
-echo "==> Chatterbox clone server (MIT) — start script written to ./clone_server/serve.sh"
-cat > "$CLONE_DIR/serve.sh" <<'EOF'
-#!/usr/bin/env bash
-# Chatterbox-Multilingual inference server (MIT). Requires a GPU for speed.
-# pip install chatterbox-tts flask
-python3 - <<'PY'
-from flask import Flask, request, send_file
-from chatterbox.tts import ChatterboxTTS
-import torch, io, soundfile as sf
-app = Flask(__name__)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model = ChatterboxTTS.from_pretrained(device=device)
-@app.post("/tts")
-def tts():
-    ref = request.files.get("reference_audio")
-    text = request.form.get("text","")
-    ref_text = request.form.get("reference_text","")
-    lang = request.form.get("language","en")
-    import tempfile, os
-    rp = tempfile.mktemp(suffix=".wav"); ref.save(rp)
-    wav = model.generate(text, audio_prompt_path=rp, audio_prompt_text=ref_text)
-    buf = io.BytesIO(); sf.write(buf, wav, model.sr, format="WAV"); buf.seek(0)
-    os.remove(rp)
-    return send_file(buf, mimetype="audio/wav")
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8008)
-PY
-EOF
-chmod +x "$CLONE_DIR/serve.sh"
-
 echo "==> Noxis Core LLM (llama.cpp, local GGUF)"
 echo "    Install llama.cpp: https://github.com/ggerganov/llama.cpp"
 echo "    Pick a small permissive GGUF (e.g. a Mistral/Llama derivative, Apache/MIT)."
@@ -156,8 +124,7 @@ chmod +x "$LLM_DIR/serve.sh"
 
 echo ""
 echo "Setup complete. Start each sidecar in its own terminal, then run the bot:"
-echo "  ./kokoro/serve.sh      # terminal 1"
-echo "  ./clone_server/serve.sh # terminal 2 (GPU)"
-echo "  ./llm/serve.sh         # terminal 3 (optional, for /ask)"
+echo "  ./kokoro/serve.sh      # terminal 1 (neural TTS, optional)"
+echo "  ./llm/serve.sh         # terminal 2 (local LLM, for /ask)"
 echo "  export ANUBIS_TELEGRAM_TOKEN=...  # NEVER commit this"
 echo "  cargo run --release"

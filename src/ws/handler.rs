@@ -257,7 +257,6 @@ async fn handle_text(out: &Outbound, session: &mut Session, shared: &WsShared, p
     // Transient user id: 0 for anonymous WS clients. Persisting is opt-in.
     let user_id = 0i64;
     let state = &shared.state;
-    state.db.audit(user_id, "ws_ask", &text);
 
     let history = state.memory.history(user_id);
     let teacher_mode = state.db.teacher_mode(user_id);

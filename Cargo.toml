@@ -2,7 +2,7 @@
 name = "anubis"
 version = "2.1.0"
 edition = "2021"
-description = "ANUBIS Core — local-first, open-source, bare-metal voice AI in Rust (Telegram bot + streaming WebSocket + Noxis Core + TTS + voice cloning)"
+description = "ANUBIS Voice Teacher — local-first, open-source, bare-metal multilingual voice AI teacher in Rust (Telegram bot + streaming WebSocket + Noxis Core + Piper/Kokoro TTS)"
 license = "MIT"
 repository = "https://github.com/mastergeeky1-cloud/anubis-core"
 readme = "README.md"

@@ -22,7 +22,6 @@ pub struct UserRow {
     pub daily_reset: String,
     pub active_voice: String,
     pub teacher_mode: bool,
-    pub installed_pack: String,
 }
 
 const MIGRATION: &str = "
@@ -37,20 +36,8 @@ CREATE TABLE IF NOT EXISTS users (
     daily_used   INTEGER NOT NULL DEFAULT 0,
     daily_reset  TEXT    NOT NULL DEFAULT '',
     active_voice TEXT    NOT NULL DEFAULT '',
-    consent_at   TEXT,
-    banned       INTEGER NOT NULL DEFAULT 0,
     memory       TEXT    NOT NULL DEFAULT '[]',
-    installed_pack TEXT  NOT NULL DEFAULT '',
     teacher_mode INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS voice_clones (
-    id         TEXT    PRIMARY KEY,
-    user_id    INTEGER NOT NULL REFERENCES users(id),
-    name       TEXT    NOT NULL,
-    wav_path   TEXT    NOT NULL,
-    ref_text   TEXT    NOT NULL DEFAULT '',
-    created_at TEXT    NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS credit_log (
@@ -59,14 +46,6 @@ CREATE TABLE IF NOT EXISTS credit_log (
     delta      INTEGER NOT NULL,
     reason     TEXT    NOT NULL,
     created_at TEXT    NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS audit_log (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts         TEXT    NOT NULL,
-    user_id    INTEGER NOT NULL,
-    action     TEXT    NOT NULL,
-    detail     TEXT    NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -79,9 +58,7 @@ CREATE TABLE IF NOT EXISTS payments (
     created_at         TEXT    NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_clones_user     ON voice_clones(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_log_user ON credit_log(user_id);
-CREATE INDEX IF NOT EXISTS idx_audit_user      ON audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_user   ON payments(user_id);
 ";
 
@@ -114,15 +91,6 @@ impl Database {
 
     pub fn conn(&self) -> Result<Conn> {
         self.pool.get().map_err(AnubisError::from)
-    }
-
-    pub fn audit(&self, user_id: i64, action: &str, detail: &str) {
-        if let Ok(c) = self.conn() {
-            let _ = c.execute(
-                "INSERT INTO audit_log (ts, user_id, action, detail) VALUES (?1, ?2, ?3, ?4)",
-                params![Utc::now().to_rfc3339(), user_id, action, detail],
-            );
-        }
     }
 
     pub fn upsert_user(&self, id: i64, username: Option<&str>) -> Result<()> {
@@ -233,7 +201,7 @@ impl Database {
         let c = self.conn()?;
         let mut stmt = c.prepare(
             "SELECT id, username, lang, credits, daily_used, daily_reset,
-                    active_voice, teacher_mode, installed_pack
+                    active_voice, teacher_mode
              FROM users WHERE id = ?1",
         )?;
         let mut rows = stmt.query_map(params![user_id], |row| {
@@ -246,7 +214,6 @@ impl Database {
                 daily_reset: row.get(5)?,
                 active_voice: row.get(6)?,
                 teacher_mode: row.get(7)?,
-                installed_pack: row.get(8)?,
             })
         })?;
         match rows.next() {
@@ -384,12 +351,6 @@ mod tests {
         assert!(db.teacher_mode(20));
         db.set_teacher_mode(20, false).unwrap();
         assert!(!db.teacher_mode(20));
-    }
-
-    #[test]
-    fn audit_does_not_panic() {
-        let db = test_db();
-        db.audit(1, "test", "hello");
     }
 
     #[test]

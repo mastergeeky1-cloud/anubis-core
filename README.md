@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="assets/banner.png" alt="ANUBIS Core" width="100%" />
+  <img src="assets/banner.png" alt="ANUBIS Voice Teacher" width="100%" />
 </p>
 
 <p align="center">
-  <strong>Local-first, open-source, bare-metal voice AI — written in Rust.</strong><br/>
+  <strong>Local-first, open-source, bare-metal AI voice teacher — written in Rust.</strong><br/>
   A multilingual Telegram **voice teacher** with a streaming real-time WebSocket
   transport, a local LLM "brain", and text-to-speech — all on your own machine.
 </p>
@@ -108,7 +108,7 @@ manual setup:
 ./target/release/anubis
 ```
 
-or the one-shot runner (downloads + sidecars + bot):
+or, one-shot with all downloads + LLM sidecar + bot:
 
 ```bash
 ./run_local.sh --all
@@ -127,6 +127,8 @@ When running manually, the bot also starts the WS server on `ANUBIS_WS_BIND`.
 | `/lang` | Change language — auto-switches your voice |
 | `/teacher on|off|status` | Toggle teacher mode (real educator) |
 | `/reset` | Clear conversation memory |
+| `/credits` | Check your credits & daily quota |
+| `/upgrade` | Buy more credits with Telegram Stars |
 
 **Voice behavior:** a plain text message with no `/command` goes straight to
 the teacher. Every AI reply shows a "🔊 Listen" button to hear it spoken in

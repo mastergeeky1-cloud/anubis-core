@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ANUBIS-NOXIS: One-shot local runner (open-source, no external APIs required)
 # Usage: ./run_local.sh [--download] [--serve] [--bot] [--all]
-#   --download : download all permissive models (Piper voices, Kokoro, Chatterbox)
-#   --serve    : launch all sidecars in background (Kokoro:8880, Clone:8008, LLM:8080)
+#   --download : download all permissive models (Piper voices, Kokoro)
+#   --serve    : launch all sidecars in background (Kokoro:8880, LLM:8080)
 #   --bot      : run the Rust bot (needs ANUBIS_TELEGRAM_TOKEN in env)
 #   --all      : do all of the above
 
@@ -12,12 +12,10 @@ cd "$(dirname "$0")"
 ROOT="."
 PIPER_DIR="$ROOT/voices"
 KOKORO_DIR="$ROOT/kokoro"
-CLONE_DIR="$ROOT/clone_server"
 LLM_DIR="$ROOT/llm"
-CLONES_DIR="$ROOT/clones"
 AUDIO_DIR="$ROOT/audio_output"
 
-mkdir -p "$PIPER_DIR" "$KOKORO_DIR" "$CLONE_DIR" "$LLM_DIR" "$CLONES_DIR" "$AUDIO_DIR"
+mkdir -p "$PIPER_DIR" "$KOKORO_DIR" "$LLM_DIR" "$AUDIO_DIR"
 
 download_models() {
   echo "==> [1/3] Downloading Piper voices (MIT)…"
@@ -50,11 +48,8 @@ download_models() {
     done
   done
 
-  echo "==> [2/3] Installing Kokoro (Apache-2.0) via pip…"
+  echo "==> [2/2] Installing Kokoro (Apache-2.0) via pip…"
   python3 -m pip install --quiet kokoro torch soundfile flask 2>/dev/null || true
-
-  echo "==> [3/3] Installing Chatterbox-Multilingual (MIT) via pip…"
-  python3 -m pip install --quiet chatterbox-tts torch soundfile flask 2>/dev/null || true
 
   echo "    (Optional) Install llama.cpp for local LLM: https://github.com/ggerganov/llama.cpp"
   echo "    Models: pick any MIT/Apache GGUF (e.g. Mistral-7B-Instruct, Phi-3-mini, Gemma-2B)"
@@ -93,37 +88,6 @@ EOF
   cd "$ROOT"
   echo "    Kokoro PID: $KOKORO_PID"
 
-  echo "==> Starting Chatterbox clone sidecar on 127.0.0.1:8008…"
-  cd "$CLONE_DIR"
-  cat > serve.sh <<'EOF'
-#!/usr/bin/env bash
-python3 - <<'PY'
-from flask import Flask, request, send_file
-from chatterbox.tts import ChatterboxTTS
-import torch, io, soundfile as sf, tempfile, os
-app = Flask(__name__)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model = ChatterboxTTS.from_pretrained(device=device)
-@app.post("/tts")
-def tts():
-    ref = request.files.get("reference_audio")
-    text = request.form.get("text","")
-    ref_text = request.form.get("reference_text","")
-    lang = request.form.get("language","en")
-    rp = tempfile.mktemp(suffix=".wav"); ref.save(rp)
-    wav = model.generate(text, audio_prompt_path=rp, audio_prompt_text=ref_text)
-    buf = io.BytesIO(); sf.write(buf, wav, model.sr, format="WAV"); buf.seek(0)
-    os.remove(rp)
-    return send_file(buf, mimetype="audio/wav")
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8008)
-PY
-EOF
-  chmod +x serve.sh
-  ./serve.sh > clone.log 2>&1 &
-  CLONE_PID=$!
-  cd "$ROOT"
-  echo "    Clone PID: $CLONE_PID"
 
   if command -v llama-server >/dev/null 2>&1; then
     echo "==> Starting llama.cpp LLM sidecar on 127.0.0.1:8080…"
@@ -159,9 +123,9 @@ EOF
   fi
 
   # Save PIDs for cleanup
-  echo "$KOKORO_PID $CLONE_PID $LLM_PID $WHISPER_PID" > /tmp/anubis_sidecars.pids
+  echo "$KOKORO_PID $LLM_PID $WHISPER_PID" > /tmp/anubis_sidecars.pids
   echo ""
-  echo "Sidecars running. Logs: $KOKORO_DIR/kokoro.log $CLONE_DIR/clone.log $LLM_DIR/llm.log whisper.log"
+  echo "Sidecars running. Logs: $KOKORO_DIR/kokoro.log $LLM_DIR/llm.log whisper.log"
   echo "Stop with: kill \$(cat /tmp/anubis_sidecars.pids 2>/dev/null)"
 }
 
