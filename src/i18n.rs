@@ -28,6 +28,8 @@ pub struct Strings {
     pub btn_teacher: &'static str,
     pub btn_help: &'static str,
     pub btn_reset: &'static str,
+    pub btn_credits: &'static str,
+    pub btn_upgrade: &'static str,
 
     // Loading
     pub loading_think: &'static str,
@@ -87,6 +89,8 @@ static EN: Strings = Strings {
     btn_teacher: "🎓 Teacher Mode",
     btn_help: "❓ Help",
     btn_reset: "🔄 Reset",
+    btn_credits: "⭐ Credits",
+    btn_upgrade: "💳 Upgrade",
 
     loading_think: "🧠 Thinking…",
     loading_synth: "Synthesizing voice…",
@@ -129,6 +133,8 @@ static AR: Strings = Strings {
     btn_teacher: "🎓 وضع المعلم",
     btn_help: "❓ مساعدة",
     btn_reset: "🔄 مسح",
+    btn_credits: "⭐ الرصيد",
+    btn_upgrade: "💳 ترقية",
 
     loading_think: "🧠 يفكر…",
     loading_synth: "… جاري توليد الصوت",
@@ -172,6 +178,8 @@ static IT: Strings = Strings {
     btn_teacher: "🎓 Insegnante",
     btn_help: "❓ Aiuto",
     btn_reset: "🔄 Reset",
+    btn_credits: "⭐ Crediti",
+    btn_upgrade: "💳 Aggiorna",
 
     loading_think: "🧠 Sto pensando…",
     loading_synth: "… Sintesi vocale in corso",
@@ -215,6 +223,8 @@ static FR: Strings = Strings {
     btn_teacher: "🎓 Professeur",
     btn_help: "❓ Aide",
     btn_reset: "🔄 Reset",
+    btn_credits: "⭐ Crédits",
+    btn_upgrade: "💳 Mise à niveau",
 
     loading_think: "🧠 Je réfléchis…",
     loading_synth: "… Synthèse vocale en cours",
@@ -258,6 +268,8 @@ static ES: Strings = Strings {
     btn_teacher: "🎓 Profesor",
     btn_help: "❓ Ayuda",
     btn_reset: "🔄 Reset",
+    btn_credits: "⭐ Créditos",
+    btn_upgrade: "💳 Actualizar",
 
     loading_think: "🧠 Pensando…",
     loading_synth: "… Sintetizando voz",
@@ -301,6 +313,8 @@ static DE: Strings = Strings {
     btn_teacher: "🎓 Lehrer",
     btn_help: "❓ Hilfe",
     btn_reset: "🔄 Reset",
+    btn_credits: "⭐ Guthaben",
+    btn_upgrade: "💳 Upgrade",
 
     loading_think: "🧠 Ich denke…",
     loading_synth: "… Sprachausgabe wird erstellt",
@@ -344,6 +358,8 @@ static RU: Strings = Strings {
     btn_teacher: "🎓 Учитель",
     btn_help: "❓ Помощь",
     btn_reset: "🔄 Сброс",
+    btn_credits: "⭐ Кредиты",
+    btn_upgrade: "💳 Обновить",
 
     loading_think: "🧠 Думаю…",
     loading_synth: "… Синтез голоса",
@@ -387,6 +403,8 @@ static HI: Strings = Strings {
     btn_teacher: "🎓 शिक्षक",
     btn_help: "❓ मदद",
     btn_reset: "🔄 रीसेट",
+    btn_credits: "⭐ क्रेडिट",
+    btn_upgrade: "💳 अपग्रेड",
 
     loading_think: "🧠 सोच रहा हूँ…",
     loading_synth: "… आवाज़ बन रही है",
@@ -430,6 +448,8 @@ static TR: Strings = Strings {
     btn_teacher: "🎓 Öğretmen",
     btn_help: "❓ Yardım",
     btn_reset: "🔄 Sıfırla",
+    btn_credits: "⭐ Krediler",
+    btn_upgrade: "💳 Yükselt",
 
     loading_think: "🧠 Düşünüyorum…",
     loading_synth: "… Ses oluşturuluyor",
@@ -473,6 +493,8 @@ static PT: Strings = Strings {
     btn_teacher: "🎓 Professor",
     btn_help: "❓ Ajuda",
     btn_reset: "🔄 Reset",
+    btn_credits: "⭐ Créditos",
+    btn_upgrade: "💳 Atualizar",
 
     loading_think: "🧠 Pensando…",
     loading_synth: "… Sintetizando voz",

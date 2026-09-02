@@ -75,7 +75,9 @@ pub async fn run(state: AppState) -> anyhow::Result<()> {
         BotCommand::new("upgrade", "💳 Buy credits with Telegram Stars"),
         BotCommand::new("help", "❓ Show help"),
     ];
+    info!("Setting bot commands: {:?}", menu_commands);
     bot.set_my_commands(menu_commands).await?;
+    info!("Bot commands set successfully");
 
     let handler = dptree::entry()
         .branch(

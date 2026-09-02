@@ -20,6 +20,10 @@ pub fn main_menu(lang: &str) -> InlineKeyboardMarkup {
             InlineKeyboardButton::callback(s.btn_teacher.to_string(), "act:teacher"),
             InlineKeyboardButton::callback(s.btn_help.to_string(), "act:help"),
         ],
+        vec![
+            InlineKeyboardButton::callback(s.btn_credits.to_string(), "act:credits"),
+            InlineKeyboardButton::callback(s.btn_upgrade.to_string(), "act:upgrade"),
+        ],
         vec![InlineKeyboardButton::callback(
             s.btn_reset.to_string(),
             "act:reset",

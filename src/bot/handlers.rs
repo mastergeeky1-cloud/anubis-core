@@ -206,6 +206,38 @@ pub async fn handle_callback(bot: Bot, q: CallbackQuery, st: AppState) -> anyhow
                     send_html(&bot, cid, s.help).await?;
                 }
             }
+            "credits" => {
+                if let Some(cid) = chat {
+                    let text = s
+                        .credits_info
+                        .replace(
+                            "{credits}",
+                            &st.db
+                                .get_user(user_id)
+                                .ok()
+                                .flatten()
+                                .map(|u| u.credits)
+                                .unwrap_or(0)
+                                .to_string(),
+                        )
+                        .replace(
+                            "{used}",
+                            &st.db
+                                .get_user(user_id)
+                                .ok()
+                                .flatten()
+                                .map(|u| u.daily_used)
+                                .unwrap_or(0)
+                                .to_string(),
+                        );
+                    send_html(&bot, cid, &text).await?;
+                }
+            }
+            "upgrade" => {
+                if let Some(cid) = chat {
+                    send_stars_invoice(&bot, cid, s).await?;
+                }
+            }
             "reset" => {
                 if let Some(cid) = chat {
                     st.memory.clear(user_id);
@@ -354,6 +386,26 @@ async fn cmd_credits(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()>
     Ok(())
 }
 
+/// Send the 50-credits Telegram Stars invoice. Stars invoices use currency
+/// "XTR" with an empty provider token (per Bot API).
+async fn send_stars_invoice(bot: &Bot, chat_id: ChatId, s: &i18n::Strings) -> anyhow::Result<()> {
+    let stars = 50;
+    let credits = 50;
+    let payload = format!("credits_{credits}");
+
+    bot.send_invoice(
+        chat_id,
+        "ANUBIS — 50 Credits",
+        s.upgrade_info,
+        payload,
+        String::new(), // Telegram Stars: provider token must be empty
+        "XTR",
+        vec![LabeledPrice::new("50 credits", stars)],
+    )
+    .await?;
+    Ok(())
+}
+
 async fn cmd_upgrade(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()> {
     let user_id = msg.from().map(|u| u.id.0 as i64).unwrap_or(0);
     let lang = st.db.user_lang(user_id);
@@ -366,21 +418,7 @@ async fn cmd_upgrade(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()>
         )
         .ok();
 
-    // 50 credits for 50 Telegram Stars.
-    let stars = 50;
-    let credits = 50;
-    let payload = format!("credits_{credits}");
-
-    bot.send_invoice(
-        msg.chat.id,
-        "ANUBIS — 50 Credits",
-        s.upgrade_info,
-        payload,
-        String::new(), // Telegram Stars: no provider token
-        "XTR",
-        vec![LabeledPrice::new("50 credits", stars)],
-    )
-    .await?;
+    send_stars_invoice(&bot, msg.chat.id, s).await?;
     Ok(())
 }
 
