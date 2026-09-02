@@ -46,6 +46,10 @@ pub enum Command {
     #[command(description = "🛍 Voice Pack Marketplace: install curated voice packs")]
     Shop,
 
+    // ── Teacher mode ──────────────────────────────────────────────────────────
+    #[command(description = "🎓 Teacher mode: /teacher on|off|status")]
+    Teacher(String),
+
     // ── Settings & account ─────────────────────────────────────────────────
     #[command(description = "🌐 Change interface language")]
     Lang,

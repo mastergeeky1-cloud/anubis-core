@@ -28,11 +28,12 @@ your machine unless you explicitly point a sidecar at an external provider.
 
 | | |
 |---|---|
-| 🧠 **Noxis Core** | Local LLM "brain" (llama.cpp / Ollama / OpenAI-compatible). Streaming replies, per-user conversation memory. |
+| 🧠 **Noxis Core** | Local LLM "brain" (llama.cpp / Ollama / OpenAI-compatible). Streaming replies, per-user conversation memory. **Teacher mode** (`/teacher on`) turns it into a real educator (Socratic, exercises, feedback). |
 | 🗣 **Streaming WebSocket** | A real-time opcode transport so web apps / clients get live text deltas **and** audio frames as they're generated. |
-| 🎙 **TTS** | Piper (CPU) + Kokoro (neural sidecar). 20+ voices across **10 languages**. |
+| 🎙 **TTS** | Piper (CPU) + Kokoro (neural sidecar). **78 voices across 10 languages** incl. high-quality EN/AR/IT. |
 | 🧬 **Voice cloning** | Local, MIT-licensed Chatterbox-Multilingual sidecar (replaces the old XTTS/F5 path). |
 | 🎤 **Voice conversation** | Send a voice note → whisper.cpp transcribes locally → Noxis answers → reply in an audible voice. |
+| 🌐 **Language-aware voice** | Changing language auto-switches your voice to that language's best default. |
 | 🔒 **Security** | Consent gate, LSB audio watermark, rate limiting, input sanitization, full audit log, env-only tokens. |
 | ⚡ **Monetization** | Telegram Stars payments, idempotent credit granting, daily free quota, optional unlimited mode. |
 | 🌐 **i18n** | Full command-center UI localized in 9 languages (EN/AR/IT/FR/ES/DE/RU/HI/TR/PT). |
@@ -131,10 +132,12 @@ When running manually, the bot also starts the WS server on `ANUBIS_WS_BIND`.
 | `/myvoice <text>` | Speak in your cloned voice |
 | `/clone` | Clone your voice (send a 30–60s voice note) |
 | `/clones` | Manage your clones |
-| `/voices` | Browse & pick a voice (20+) |
+| `/voices` | Browse & pick a voice (78) |
 | `/setvoice <id>` | Set active voice by id |
 | `/presets` | Curated voice presets |
-| `/lang` | Change interface language |
+| `/teacher on|off|status` | Toggle teacher mode (real educator) |
+| `/lang` | Change language — auto-switches your voice |
+| `/shop` | Voice pack marketplace (other-bot promos/ads) |
 | `/credits` `/upgrade` | Balance & buy credits (Telegram Stars) |
 | `/reset` | Clear conversation memory |
 | `/mystats` `/stats` | Your stats / admin stats |

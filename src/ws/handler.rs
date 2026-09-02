@@ -260,13 +260,14 @@ async fn handle_text(out: &Outbound, session: &mut Session, shared: &WsShared, p
     state.db.audit(user_id, "ws_ask", &text);
 
     let history = state.memory.history(user_id);
+    let teacher_mode = state.db.teacher_mode(user_id);
 
     // Stream the LLM reply: the sync callback enqueues TextDelta frames on the
     // unbounded channel — the socket writer task flushes them in real time.
     let out_delta = out.clone();
     let reply = match state
         .noxis
-        .ask_stream(&text, &session.lang, &history, |delta| {
+        .ask_stream(&text, &session.lang, &history, teacher_mode, |delta| {
             if let Some(bytes) = WsFrame::encode(OpReply::TextDelta, delta.as_bytes()) {
                 let _ = out_delta.tx.send(Message::Binary(bytes.freeze().into()));
             }

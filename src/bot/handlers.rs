@@ -153,6 +153,55 @@ fn header_pack_display(installed: &str) -> String {
     }
 }
 
+/// Handle /teacher command: toggle teacher mode on/off/status.
+async fn cmd_teacher(
+    bot: Bot,
+    cid: ChatId,
+    user_id: i64,
+    state: &AppState,
+    _s: &'static crate::i18n::Strings,
+    arg: &str,
+) -> Result<(), teloxide::RequestError> {
+    let arg = arg.trim().to_lowercase();
+    match arg.as_str() {
+        "on" | "enable" | "1" | "true" => {
+            let _ = state.db.set_teacher_mode(user_id, true);
+            bot.send_message(
+                cid,
+                crate::i18n::md2("🎓 Teacher mode *enabled*. I'll teach you step by step."),
+            )
+            .parse_mode(ParseMode::MarkdownV2)
+            .await?;
+        }
+        "off" | "disable" | "0" | "false" => {
+            let _ = state.db.set_teacher_mode(user_id, false);
+            bot.send_message(
+                cid,
+                crate::i18n::md2("🎓 Teacher mode *disabled*. Back to normal assistant."),
+            )
+            .parse_mode(ParseMode::MarkdownV2)
+            .await?;
+        }
+        "status" | "" => {
+            let enabled = state.db.teacher_mode(user_id);
+            let msg = if enabled {
+                "🎓 Teacher mode: *ON*"
+            } else {
+                "🎓 Teacher mode: *OFF*"
+            };
+            bot.send_message(cid, crate::i18n::md2(msg))
+                .parse_mode(ParseMode::MarkdownV2)
+                .await?;
+        }
+        _ => {
+            bot.send_message(cid, crate::i18n::md2("Usage: `/teacher on|off|status`"))
+                .parse_mode(ParseMode::MarkdownV2)
+                .await?;
+        }
+    }
+    Ok(())
+}
+
 /// Centralized voice generation: resolves the active voice, checks cache +
 /// credits, synthesizes via the TTS router, converts to OGG and sends the
 /// voice message. Used by /speak, /myvoice, ask:voice and the gallery.
@@ -252,6 +301,7 @@ async fn do_ask(
     let thinking = bot.send_message(cid, s.loading_think).await?;
     state.db.audit(user_id, "ask", text);
     let history = state.memory.history(user_id);
+    let teacher_mode = state.db.teacher_mode(user_id);
     let chat_id = cid;
     let thinking_id = thinking.id;
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<String>();
@@ -277,7 +327,7 @@ async fn do_ask(
     });
     let send_result = state
         .noxis
-        .ask_stream(text, lang, &history, |delta| {
+        .ask_stream(text, lang, &history, teacher_mode, |delta| {
             let _ = tx.send(delta.to_string());
         })
         .await;
@@ -416,6 +466,9 @@ pub async fn handle_command(
         }
         Command::Shop => {
             cmd_shop(bot, cid, user_id, &lang, &state, s).await?;
+        }
+        Command::Teacher(arg) => {
+            cmd_teacher(bot, cid, user_id, &state, s, &arg).await?;
         }
         Command::Setvoice(id) => {
             let id = id.trim().to_string();
@@ -1565,10 +1618,27 @@ pub async fn handle_callback(
     }
 
     if let Some(code) = data.strip_prefix("lang:") {
+        let old_lang = state.db.user_lang(user_id);
+        let old_voice = state.db.active_voice(user_id);
+        let is_default_voice = old_voice == voices::default_for_lang(&old_lang);
+
         let _ = state.db.set_lang(user_id, code);
-        bot.answer_callback_query(&q.id)
-            .text(crate::i18n::get(code).lang_set)
-            .await?;
+
+        if is_default_voice {
+            let new_voice = voices::default_for_lang(code);
+            let _ = state.db.set_active_voice(user_id, new_voice);
+            let voice_name = voices::find(new_voice).map(|v| v.name).unwrap_or(new_voice);
+            let msg = format!(
+                "{} Voice switched to {}",
+                crate::i18n::get(code).lang_set,
+                voice_name
+            );
+            bot.answer_callback_query(&q.id).text(msg).await?;
+        } else {
+            bot.answer_callback_query(&q.id)
+                .text(crate::i18n::get(code).lang_set)
+                .await?;
+        }
         if let Some(msg) = q.message {
             let _ = bot.delete_message(msg.chat.id, msg.id).await;
         }
@@ -1810,7 +1880,8 @@ async fn handle_voice_conversation(
         .edit_message_text(cid, thinking.id, s.loading_think)
         .await;
     let history = state.memory.history(user_id);
-    let reply = match state.noxis.ask(&text, &lang, &history).await {
+    let teacher_mode = state.db.teacher_mode(user_id);
+    let reply = match state.noxis.ask(&text, &lang, &history, teacher_mode).await {
         Ok(r) => r,
         Err(e) => {
             error!("voice conv ask error: {e}");

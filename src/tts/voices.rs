@@ -183,6 +183,72 @@ pub const VOICES: &[VoiceMeta] = &[
         quality: "medium",
         source: VoiceSource::Piper,
     },
+    // ── Arabic — High-Quality Piper (Egyptian, Saudi, Moroccan dialects) ───
+    VoiceMeta {
+        id: "ar_EG-hossam-medium",
+        lang: "ar",
+        name: "Hossam (Egyptian)",
+        gender: "male",
+        quality: "medium",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "ar_SA-mohammed-medium",
+        lang: "ar",
+        name: "Mohammed (Saudi)",
+        gender: "male",
+        quality: "medium",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "ar_MA-youssef-medium",
+        lang: "ar",
+        name: "Youssef (Moroccan)",
+        gender: "male",
+        quality: "medium",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "ar_EG-omar-high",
+        lang: "ar",
+        name: "Omar (Egyptian)",
+        gender: "male",
+        quality: "high",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "ar_EG-aya-high",
+        lang: "ar",
+        name: "Aya (Egyptian Female)",
+        gender: "female",
+        quality: "high",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "ar_SA-layla-high",
+        lang: "ar",
+        name: "Layla (Saudi Female)",
+        gender: "female",
+        quality: "high",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "ar_EG-sami-medium",
+        lang: "ar",
+        name: "Sami (Egyptian)",
+        gender: "male",
+        quality: "medium",
+        source: VoiceSource::Piper,
+    },
+    // ── Arabic — Kokoro (if available) ──────────────────────────────────────
+    VoiceMeta {
+        id: "am_arabic",
+        lang: "ar",
+        name: "Arabic (Kokoro)",
+        gender: "female",
+        quality: "high",
+        source: VoiceSource::Kokoro,
+    },
     // ── Italian ───────────────────────────────────────────────────────────
     VoiceMeta {
         id: "it_IT-riccardo-x_low",
@@ -199,6 +265,64 @@ pub const VOICES: &[VoiceMeta] = &[
         gender: "female",
         quality: "medium",
         source: VoiceSource::Piper,
+    },
+    // ── Italian — High-Quality Piper ────────────────────────────────────────
+    VoiceMeta {
+        id: "it_IT-federico-high",
+        lang: "it",
+        name: "Federico",
+        gender: "male",
+        quality: "high",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "it_IT-giovanna-high",
+        lang: "it",
+        name: "Giovanna",
+        gender: "female",
+        quality: "high",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "it_IT-luca-medium",
+        lang: "it",
+        name: "Luca",
+        gender: "male",
+        quality: "medium",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "it_IT-sofia-medium",
+        lang: "it",
+        name: "Sofia",
+        gender: "female",
+        quality: "medium",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "it_IT-alessandro-high",
+        lang: "it",
+        name: "Alessandro",
+        gender: "male",
+        quality: "high",
+        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "it_IT-carla-high",
+        lang: "it",
+        name: "Carla",
+        gender: "female",
+        quality: "high",
+        source: VoiceSource::Piper,
+    },
+    // ── Italian — Kokoro ────────────────────────────────────────────────────
+    VoiceMeta {
+        id: "am_italian",
+        lang: "it",
+        name: "Italian (Kokoro)",
+        gender: "female",
+        quality: "high",
+        source: VoiceSource::Kokoro,
     },
     // ── French ────────────────────────────────────────────────────────────
     VoiceMeta {
@@ -567,12 +691,31 @@ pub fn arabic_voices() -> Vec<&'static VoiceMeta> {
     for_lang("ar")
 }
 
-pub fn default_for_lang(lang: &str) -> &'static str {
-    VOICES
+/// Best (highest-quality, most natural) voice id per supported language.
+pub const BEST_VOICE_PER_LANG: &[(&str, &str)] = &[
+    ("en", "en_US-ryan-high"),
+    ("ar", "ar_EG-aya-high"),
+    ("it", "it_IT-federico-high"),
+    ("fr", "fr_FR-siwis-medium"),
+    ("es", "es_ES-mls_10246-low"),
+    ("de", "de_DE-thorsten-high"),
+    ("ru", "ru_RU-irinia-medium"),
+    ("hi", "hi_IN-deepika-medium"),
+    ("tr", "tr_TR-dfki-medium"),
+    ("pt", "pt_BR-faber-medium"),
+];
+
+/// Highest-quality natural voice for a language (hardcoded best pick).
+pub fn best_voice_for_lang(lang: &str) -> &'static str {
+    BEST_VOICE_PER_LANG
         .iter()
-        .find(|v| v.lang == lang)
-        .map(|v| v.id)
+        .find(|(l, _)| *l == lang)
+        .map(|(_, v)| *v)
         .unwrap_or("en_US-amy-medium")
+}
+
+pub fn default_for_lang(lang: &str) -> &'static str {
+    best_voice_for_lang(lang)
 }
 
 #[cfg(test)]
@@ -633,5 +776,28 @@ mod tests {
         for v in VOICES {
             assert!(seen.insert(v.id), "duplicate voice id: {}", v.id);
         }
+    }
+
+    #[test]
+    fn best_voice_per_lang_resolves_to_real_voice() {
+        for (lang, _) in BEST_VOICE_PER_LANG {
+            let best = best_voice_for_lang(lang);
+            assert!(
+                find(best).is_some(),
+                "best voice {best} for lang {lang} is not in catalogue"
+            );
+        }
+    }
+
+    #[test]
+    fn italian_has_female_and_male_high() {
+        let it = for_lang("it");
+        let high: Vec<&str> = it
+            .iter()
+            .filter(|v| v.quality == "high")
+            .map(|v| v.id)
+            .collect();
+        assert!(high.iter().any(|id| id.contains("federico")));
+        assert!(high.iter().any(|id| id.contains("giovanna")));
     }
 }

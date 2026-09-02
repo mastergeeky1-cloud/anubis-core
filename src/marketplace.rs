@@ -31,10 +31,11 @@ pub static PACKS: &[VoicePack] = &[
         emoji: "📰",
         blurb: "Clear, neutral broadcast voices.",
         voices: &[
-            ("en", "en_US-amy-medium"),
-            ("ar", "ar_JO-kareem-medium"),
+            ("en", "en_US-ryan-high"),
+            ("ar", "ar_EG-aya-high"),
             ("fr", "fr_FR-siwis-medium"),
             ("es", "es_ES-mls_10246-low"),
+            ("it", "it_IT-giovanna-high"),
         ],
     },
     VoicePack {
@@ -44,17 +45,38 @@ pub static PACKS: &[VoicePack] = &[
         blurb: "Warm, approachable everyday voices.",
         voices: &[
             ("en", "en_US-lessac-medium"),
-            ("ar", "ar-zayd0-diacritized"),
+            ("ar", "ar_EG-sami-medium"),
             ("fr", "fr_FR-upmc-medium"),
             ("es", "es_ES-carlfm-x_low"),
+            ("it", "it_IT-sofia-medium"),
         ],
     },
     VoicePack {
         id: "arabic_elite",
         name: "Arabic Elite",
         emoji: "🇸🇦",
-        blurb: "Premium Arabic voices, including the Emirati female pack.",
-        voices: &[("ar", "ar_AE-emirati-female"), ("en", "en_US-amy-medium")],
+        blurb: "Premium Arabic voices: Egyptian female Aya, Saudi female Layla, Emirati female.",
+        voices: &[
+            ("ar", "ar_EG-aya-high"),
+            ("ar", "ar_SA-layla-high"),
+            ("ar", "ar_AE-emirati-female"),
+            ("en", "en_US-ryan-high"),
+            ("it", "it_IT-federico-high"),
+        ],
+    },
+    VoicePack {
+        id: "italian_premium",
+        name: "Italian Premium",
+        emoji: "🇮🇹",
+        blurb: "High-quality Italian voices: Federico, Giovanna, Carla, Alessandro.",
+        voices: &[
+            ("it", "it_IT-federico-high"),
+            ("it", "it_IT-giovanna-high"),
+            ("it", "it_IT-carla-high"),
+            ("it", "it_IT-alessandro-high"),
+            ("en", "en_US-ryan-high"),
+            ("ar", "ar_EG-aya-high"),
+        ],
     },
 ];
 
@@ -97,11 +119,8 @@ mod tests {
 
     #[test]
     fn pack_voice_falls_back_to_first_lang() {
-        assert_eq!(pack_voice("news", "de"), Some("en_US-amy-medium"));
-        assert_eq!(
-            pack_voice("arabic_elite", "ar"),
-            Some("ar_AE-emirati-female")
-        );
+        assert_eq!(pack_voice("news", "de"), Some("en_US-ryan-high"));
+        assert_eq!(pack_voice("arabic_elite", "ar"), Some("ar_EG-aya-high"));
     }
 
     #[test]

@@ -1,4 +1,5 @@
 use crate::error::{AnubisError, Result};
+use crate::tts::voices;
 use chrono::Utc;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
@@ -25,6 +26,8 @@ pub struct User {
     pub consent_at: Option<String>,
     #[allow(dead_code)]
     pub banned: bool,
+    #[allow(dead_code)]
+    pub teacher_mode: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -52,7 +55,8 @@ CREATE TABLE IF NOT EXISTS users (
     consent_at   TEXT,
     banned       INTEGER NOT NULL DEFAULT 0,
     memory       TEXT    NOT NULL DEFAULT '[]',
-    installed_pack TEXT  NOT NULL DEFAULT ''
+    installed_pack TEXT  NOT NULL DEFAULT '',
+    teacher_mode INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS voice_clones (
@@ -114,6 +118,17 @@ impl Database {
                     [],
                 )?;
             }
+            let has_teacher: i64 = c.query_row(
+                "SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='teacher_mode'",
+                [],
+                |r| r.get(0),
+            )?;
+            if has_teacher == 0 {
+                c.execute(
+                    "ALTER TABLE users ADD COLUMN teacher_mode INTEGER NOT NULL DEFAULT 0",
+                    [],
+                )?;
+            }
             Ok(())
         });
         let pool = Pool::builder()
@@ -151,7 +166,7 @@ impl Database {
         let c = self.conn()?;
         let mut stmt = c.prepare(
             "SELECT id, username, lang, credits, daily_used, daily_reset,
-                    active_voice, consent_at, banned
+                    active_voice, consent_at, banned, teacher_mode
              FROM users WHERE id = ?1",
         )?;
         let res = stmt.query_row(params![id], |r| {
@@ -165,6 +180,7 @@ impl Database {
                 active_voice: r.get(6)?,
                 consent_at: r.get(7)?,
                 banned: r.get::<_, i32>(8)? != 0,
+                teacher_mode: r.get::<_, i32>(9)? != 0,
             })
         });
         match res {
@@ -181,6 +197,32 @@ impl Database {
             params![lang, user_id],
         )?;
         Ok(())
+    }
+
+    /// Get user's active voice.
+    pub fn active_voice(&self, user_id: i64) -> String {
+        let Ok(c) = self.conn() else {
+            return String::new();
+        };
+        c.query_row(
+            "SELECT active_voice FROM users WHERE id = ?1",
+            params![user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| voices::default_for_lang("en").to_string())
+    }
+
+    /// Get user's current language.
+    pub fn user_lang(&self, user_id: i64) -> String {
+        let Ok(c) = self.conn() else {
+            return "en".to_string();
+        };
+        c.query_row(
+            "SELECT lang FROM users WHERE id = ?1",
+            params![user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "en".to_string())
     }
 
     pub fn set_active_voice(&self, user_id: i64, voice_id: &str) -> Result<()> {
@@ -200,6 +242,30 @@ impl Database {
             params![pack_id, user_id],
         )?;
         Ok(())
+    }
+
+    /// Enable/disable teacher mode for a user.
+    pub fn set_teacher_mode(&self, user_id: i64, enabled: bool) -> Result<()> {
+        let c = self.conn()?;
+        c.execute(
+            "UPDATE users SET teacher_mode = ?1 WHERE id = ?2",
+            params![enabled as i32, user_id],
+        )?;
+        Ok(())
+    }
+
+    /// Get teacher mode status for a user.
+    pub fn teacher_mode(&self, user_id: i64) -> bool {
+        let Ok(c) = self.conn() else { return false };
+        c.query_row(
+            "SELECT teacher_mode FROM users WHERE id = ?1",
+            params![user_id],
+            |r| {
+                let v: i32 = r.get(0)?;
+                Ok(v != 0)
+            },
+        )
+        .unwrap_or(false)
     }
 
     /// The marketplace pack id the user currently has installed, or "".

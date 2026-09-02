@@ -51,12 +51,30 @@ impl NoxisCore {
         self.enabled
     }
 
-    /// System prompt for a given user language.
-    fn system_for(&self, lang: &str) -> String {
-        format!(
-            "{}\nRespond in language code: {}. Be concise and helpful.",
-            self.cfg.system_prompt, lang
-        )
+    /// System prompt for a given user language and teacher mode.
+    fn system_for(&self, lang: &str, teacher_mode: bool) -> String {
+        let base = self.cfg.system_prompt.trim();
+        let lang_instruction = format!("Respond in language code: {}.", lang);
+
+        if teacher_mode {
+            // Teacher mode system prompt with multiple behaviors
+            format!(
+                "{}\n{}\n\n{}",
+                base,
+                lang_instruction,
+                "You are a patient, expert teacher. Adapt your teaching to the student:\n\
+                 - EXPLAIN: Break down concepts clearly with examples in the student's language\n\
+                 - SOCRATIC: Ask guiding questions to help them discover answers\n\
+                 - PRACTICE: Give exercises, quizzes, or problems appropriate to their level\n\
+                 - FEEDBACK: Correct mistakes constructively, explain WHY it's wrong\n\
+                 - ENCOURAGE: Celebrate progress, normalize struggle, growth mindset\n\
+                 - ADAPT: Detect their level; simplify if lost, deepen if bored\n\
+                 - STRUCTURE: Use clear steps, summaries, and check understanding\n\
+                 Never just give answers — guide them to learn."
+            )
+        } else {
+            format!("{}\n{} Be concise and helpful.", base, lang_instruction)
+        }
     }
 
     fn build_messages<'a>(
@@ -64,10 +82,11 @@ impl NoxisCore {
         user_text: &'a str,
         lang: &str,
         history: &'a [(String, String)],
+        teacher_mode: bool,
     ) -> Vec<serde_json::Value> {
         let mut messages = vec![serde_json::json!({
             "role": "system",
-            "content": self.system_for(lang),
+            "content": self.system_for(lang, teacher_mode),
         })];
         // history: (role, content), oldest first. Role is "user" or "assistant".
         for (role, content) in history {
@@ -82,6 +101,7 @@ impl NoxisCore {
         user_text: &str,
         lang: &str,
         history: &[(String, String)],
+        teacher_mode: bool,
         stream: bool,
     ) -> serde_json::Value {
         serde_json::json!({
@@ -89,7 +109,7 @@ impl NoxisCore {
             "max_tokens": self.cfg.max_tokens,
             "temperature": 0.7,
             "stream": stream,
-            "messages": self.build_messages(user_text, lang, history),
+            "messages": self.build_messages(user_text, lang, history, teacher_mode),
         })
     }
 
@@ -100,11 +120,12 @@ impl NoxisCore {
         user_text: &str,
         lang: &str,
         history: &[(String, String)],
+        teacher_mode: bool,
     ) -> Result<String> {
         if !self.enabled {
             return Err(AnubisError::Llm("Noxis Core LLM URL not configured".into()));
         }
-        let body = self.chat_body(user_text, lang, history, false);
+        let body = self.chat_body(user_text, lang, history, teacher_mode, false);
         let mut req = self.client.post(chat_url(&self.cfg.base_url)).json(&body);
         if !self.cfg.api_key.trim().is_empty() {
             req = req.bearer_auth(self.cfg.api_key.trim());
@@ -146,12 +167,13 @@ impl NoxisCore {
         user_text: &str,
         lang: &str,
         history: &[(String, String)],
+        teacher_mode: bool,
         mut on_delta: impl FnMut(&str),
     ) -> Result<String> {
         if !self.enabled {
             return Err(AnubisError::Llm("Noxis Core LLM URL not configured".into()));
         }
-        let body = self.chat_body(user_text, lang, history, true);
+        let body = self.chat_body(user_text, lang, history, teacher_mode, true);
         let mut req = self.client.post(chat_url(&self.cfg.base_url)).json(&body);
         if !self.cfg.api_key.trim().is_empty() {
             req = req.bearer_auth(self.cfg.api_key.trim());
