@@ -168,9 +168,6 @@ pub async fn handle_callback(bot: Bot, q: CallbackQuery, st: AppState) -> anyhow
                         kind: PromptKind::Ask,
                     },
                 );
-                if let Some(cid) = chat {
-                    send_html(&bot, cid, s.ask_usage).await?;
-                }
             }
             "speak" => {
                 st.pending.insert(
@@ -179,9 +176,6 @@ pub async fn handle_callback(bot: Bot, q: CallbackQuery, st: AppState) -> anyhow
                         kind: PromptKind::Speak,
                     },
                 );
-                if let Some(cid) = chat {
-                    send_html(&bot, cid, s.speak_usage).await?;
-                }
             }
             "voices" => {
                 if let Some(cid) = chat {
