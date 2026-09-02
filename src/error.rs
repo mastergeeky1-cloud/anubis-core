@@ -14,14 +14,8 @@ pub enum AnubisError {
     #[error("TTS failed: {0}")]
     Tts(String),
 
-    #[error("voice clone failed: {0}")]
-    Clone(String),
-
     #[error("audio processing failed: {0}")]
     Audio(String),
-
-    #[error("WAV codec: {0}")]
-    Wav(String),
 
     #[error("HTTP request failed: {0}")]
     Http(#[from] reqwest::Error),

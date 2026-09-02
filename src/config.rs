@@ -9,12 +9,10 @@ pub struct Config {
     pub telegram: TelegramConfig,
     pub llm: LlmConfig,
     pub tts: TtsConfig,
-    pub clone: CloneConfig,
     pub whisper: WhisperConfig,
     pub database: DatabaseConfig,
     pub limits: LimitsConfig,
     pub audio: AudioConfig,
-    pub security: SecurityConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -65,14 +63,6 @@ pub struct TtsConfig {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct CloneConfig {
-    pub enabled: bool,
-    pub url: String,
-    pub clones_dir: String,
-    pub ref_text: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
 pub struct DatabaseConfig {
     pub path: String,
     pub pool_max: u32,
@@ -81,22 +71,14 @@ pub struct DatabaseConfig {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct LimitsConfig {
-    pub max_audio_duration_secs: u32,
     pub max_text_chars: usize,
-    pub free_daily_credits: i32,
-    pub unlimited_mode: bool,
-    pub cache_capacity: usize,
     pub max_concurrent_synth: usize,
 }
 
 impl Default for LimitsConfig {
     fn default() -> Self {
         Self {
-            max_audio_duration_secs: 60,
             max_text_chars: 1000,
-            free_daily_credits: 30,
-            unlimited_mode: false,
-            cache_capacity: 512,
             max_concurrent_synth: 2,
         }
     }
@@ -105,15 +87,6 @@ impl Default for LimitsConfig {
 #[derive(Debug, Clone, Deserialize)]
 pub struct AudioConfig {
     pub output_dir: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct SecurityConfig {
-    pub admin_ids: Vec<i64>,
-    pub watermark_enabled: bool,
-    pub rate_speak_per_min: u32,
-    pub rate_clone_per_hr: u32,
-    pub require_consent: bool,
 }
 
 impl Config {
@@ -148,9 +121,6 @@ impl Config {
         if let Ok(m) = std::env::var("ANUBIS_LLM_MODEL") {
             cfg.llm.model = m;
         }
-        if let Ok(u) = std::env::var("ANUBIS_CLONE_URL") {
-            cfg.clone.url = u;
-        }
         if let Ok(u) = std::env::var("ANUBIS_KOKORO_URL") {
             cfg.tts.kokoro_url = u;
         }
@@ -167,10 +137,6 @@ impl Config {
             );
         }
         Ok(cfg)
-    }
-
-    pub fn is_admin(&self, user_id: i64) -> bool {
-        self.security.admin_ids.contains(&user_id)
     }
 
     fn defaults() -> Self {
@@ -195,12 +161,6 @@ impl Config {
                 voices_dir: "./voices".into(),
                 kokoro_url: "http://127.0.0.1:8880".into(),
             },
-            clone: CloneConfig {
-                enabled: true,
-                url: "http://127.0.0.1:8008".into(),
-                clones_dir: "./clones".into(),
-                ref_text: String::new(),
-            },
             whisper: WhisperConfig {
                 enabled: false,
                 url: String::new(),
@@ -210,22 +170,11 @@ impl Config {
                 pool_max: 8,
             },
             limits: LimitsConfig {
-                max_audio_duration_secs: 60,
                 max_text_chars: 1000,
-                free_daily_credits: 30,
-                unlimited_mode: false,
-                cache_capacity: 512,
                 max_concurrent_synth: 2,
             },
             audio: AudioConfig {
                 output_dir: "./audio_output".into(),
-            },
-            security: SecurityConfig {
-                admin_ids: vec![],
-                watermark_enabled: true,
-                rate_speak_per_min: 30,
-                rate_clone_per_hr: 5,
-                require_consent: true,
             },
         }
     }

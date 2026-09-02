@@ -4,8 +4,8 @@
 
 <p align="center">
   <strong>Local-first, open-source, bare-metal voice AI — written in Rust.</strong><br/>
-  A Telegram voice bot with a streaming real-time WebSocket transport, a local
-  LLM "brain", TTS, voice cloning, and secure payments — all on your own machine.
+  A multilingual Telegram **voice teacher** with a streaming real-time WebSocket
+  transport, a local LLM "brain", and text-to-speech — all on your own machine.
 </p>
 
 <p align="center">
@@ -15,8 +15,7 @@
   <a href="#commands">Commands</a> •
   <a href="#real-time-websocket">WebSocket</a> •
   <a href="#configuration">Configuration</a> •
-  <a href="#security">Security</a> •
-  <a href="#scaling-roadmap">Roadmap</a>
+  <a href="#license">License</a>
 </p>
 
 ---
@@ -28,40 +27,34 @@ your machine unless you explicitly point a sidecar at an external provider.
 
 | | |
 |---|---|
-| 🧠 **Noxis Core** | Local LLM "brain" (llama.cpp / Ollama / OpenAI-compatible). Streaming replies, per-user conversation memory. **Teacher mode** (`/teacher on`) turns it into a real educator (Socratic, exercises, feedback). |
+| 🎓 **Voice Teacher** | The core identity: a multilingual AI language teacher. Ask questions in any language, hear your teacher speak back, with real teaching behaviors (explain, Socratic dialogues, practice, feedback, encouragement). |
+| 🧠 **Noxis Core** | Local LLM "brain" (llama.cpp / Ollama / OpenAI-compatible). Streaming replies, per-user conversation memory, teacher mode. |
+| 🎙 **TTS** | Piper (CPU) + Kokoro (neural sidecar). Real, downloadable voices across 10 languages — all preloaded, **zero user install**. |
+| 📦 **Zero-setup voices** | `scripts/download_voices.sh` fetches every catalog model; voice/language auto-switch picks the best voice for each language. |
 | 🗣 **Streaming WebSocket** | A real-time opcode transport so web apps / clients get live text deltas **and** audio frames as they're generated. |
-| 🎙 **TTS** | Piper (CPU) + Kokoro (neural sidecar). **78 voices across 10 languages** incl. high-quality EN/AR/IT. |
-| 🧬 **Voice cloning** | Local, MIT-licensed Chatterbox-Multilingual sidecar (replaces the old XTTS/F5 path). |
-| 🎤 **Voice conversation** | Send a voice note → whisper.cpp transcribes locally → Noxis answers → reply in an audible voice. |
-| 🌐 **Language-aware voice** | Changing language auto-switches your voice to that language's best default. |
-| 🔒 **Security** | Consent gate, LSB audio watermark, rate limiting, input sanitization, full audit log, env-only tokens. |
-| ⚡ **Monetization** | Telegram Stars payments, idempotent credit granting, daily free quota, optional unlimited mode. |
-| 🌐 **i18n** | Full command-center UI localized in 9 languages (EN/AR/IT/FR/ES/DE/RU/HI/TR/PT). |
+| 🌐 **Language-aware voice** | Changing language auto-switches your voice (and UI) to that language's best default. |
+| 🎤 **Voice conversation** | Optional: send a voice note → whisper.cpp transcribes locally → Noxis answers → reply in an audible voice. |
+| 🌐 **i18n** | Full UI localized in 10 languages (EN/AR/IT/FR/ES/DE/RU/HI/TR/PT). |
 
 ## Architecture
 
 ```
                        ┌──────────────────────────────────────────────┐
    Telegram  long-poll │  anubis-core (Rust binary)   WebSocket  WS   │
-      ▶────────────────┤  • teloxide bot            ◀────────────────┤──▶ Web / mobile clients
-                       │  • Noxis Core (LLM client)  • axum WS server │
-                       │  • security (rate-limit, consent,            │
-                       │    watermark, audit, sanitize)               │
-                       │  • TTS router (Piper / Kokoro)               │
-                       │  • Voice clone (Chatterbox)                  │
-                       │  • SQLite + LRU audio cache + ffmpeg glue    │
-                       └──────────┬──────────────────┬────────────────┘
-                                  │ HTTP/local       │ HTTP/local
-                                  ▼                  ▼
-                     llama.cpp / Ollama      Chatterbox server
-                          (:8080)                 (:8008)
-                       Kokoro TTS (:8880)
-                       whisper.cpp (:8890)
-```
+       ▶────────────────┤  • teloxide bot            ◀────────────────┤──▶ Web / mobile clients
+                        │  • Noxis Core (LLM client)  • axum WS server │
+                        │  • TTS router (Piper / Kokoro)               │
+                        │  • SQLite + ffmpeg glue                      │
+                        └──────────┬──────────────────┬────────────────┘
+                                   │ HTTP/local       │
+                                   ▼                  ▼
+                      llama.cpp / Ollama           whisper.cpp (:8890)
+                           (:8080)
+                        Kokoro TTS (:8880)
+ ```
 
-Both transports share the **same core** — Noxis, TTS router, clone engine,
-whisper, memory, DB, and LRU cache. The WebSocket transport is a second door
-into identical backend logic.
+Both transports share the **same core** — Noxis, TTS router, whisper, memory,
+and DB. The WebSocket transport is a second door into identical backend logic.
 
 ## Quickstart
 
@@ -92,7 +85,6 @@ export ANUBIS_LLM_URL="http://127.0.0.1:8080"      # leave empty to disable /ask
 # export ANUBIS_LLM_URL="https://api.omniroute.ai"  ANUBIS_LLM_KEY="..."
 
 # Sidecars
-export ANUBIS_CLONE_URL="http://127.0.0.1:8008"     # Chatterbox voice clone
 export ANUBIS_KOKORO_URL="http://127.0.0.1:8880"    # optional Kokoro TTS
 export ANUBIS_WHISPER_URL="http://127.0.0.1:8890"   # optional voice input
 
@@ -103,9 +95,11 @@ export ANUBIS_WS_TOKEN=""                           # optional shared bearer tok
 
 ### 4. Download permissive voices
 
+All catalog voices are real, downloadable Piper models — fetch them with zero
+manual setup:
+
 ```bash
-./run_local.sh --download      # fetch Piper voices + sidecars (MIT/Apache)
-# or individually via scripts/setup.sh
+./scripts/download_voices.sh      # fetches every voice in the catalogue
 ```
 
 ### 5. Run
@@ -126,26 +120,18 @@ When running manually, the bot also starts the WS server on `ANUBIS_WS_BIND`.
 
 | Command | Description |
 |---|---|
-| `/start` `/menu` `/help` | Start bot, open menu, help |
-| `/ask <text>` | Chat with the Noxis Core brain |
-| `/speak <text>` | Generate speech from text |
-| `/myvoice <text>` | Speak in your cloned voice |
-| `/clone` | Clone your voice (send a 30–60s voice note) |
-| `/clones` | Manage your clones |
-| `/voices` | Browse & pick a voice (78) |
-| `/setvoice <id>` | Set active voice by id |
-| `/presets` | Curated voice presets |
-| `/teacher on|off|status` | Toggle teacher mode (real educator) |
+| `/start` `/help` | Start the voice teacher, show help |
+| `/ask <text>` | Ask your teacher (also: just type a plain message) |
+| `/speak <text>` | Hear text spoken aloud in your voice |
+| `/voices` | Browse & pick a voice for your teacher |
 | `/lang` | Change language — auto-switches your voice |
-| `/shop` | Voice pack marketplace (other-bot promos/ads) |
-| `/credits` `/upgrade` | Balance & buy credits (Telegram Stars) |
+| `/teacher on|off|status` | Toggle teacher mode (real educator) |
 | `/reset` | Clear conversation memory |
-| `/mystats` `/stats` | Your stats / admin stats |
 
 **Voice behavior:** a plain text message with no `/command` goes straight to
-the AI. If you've **explicitly selected a voice**, replies come back spoken in
-that voice (a persistent session voice); otherwise replies are text with a
-"🔊 Speak this" button.
+the teacher. Every AI reply shows a "🔊 Listen" button to hear it spoken in
+your chosen voice. `/speak <text>` synthesizes any text directly. Changing
+language always picks that language's best preloaded voice.
 
 ## Real-time WebSocket
 
@@ -175,47 +161,29 @@ client `assets/anubis-ws-client.mjs`).
 MODEL=base ./scripts/whisper.sh   # builds whisper.cpp + serves on :8890
 ```
 
-## Payments
+## Configuration
 
-Upgrading uses **Telegram Stars** (XTR) — no card data handled by the bot.
-Credits are granted **idempotently**: each Telegram charge ID can credit once,
-and the amount is validated against the tier before crediting.
+See `config.toml` for the non-secret knobs (LLM URL, TTS paths, database).
+Every secret and endpoint is overridable via env vars:
 
-## Security
+| Env var | Purpose |
+|---------|---------|
+| `ANUBIS_TELEGRAM_TOKEN` | **Required**. Bot token from @BotFather. |
+| `ANUBIS_LLM_URL` | llama.cpp / ollama endpoint (empty = no teacher AI) |
+| `ANUBIS_LLM_KEY` | API key for hosted endpoints (optional) |
+| `ANUBIS_KOKORO_URL` | Kokoro neural TTS sidecar (optional) |
+| `ANUBIS_WHISPER_URL` | whisper.cpp sidecar for voice input (optional) |
+| `ANUBIS_TELEGRAM_MODE` | `poll` (default) or `webhook` |
+| `ANUBIS_WS_BIND` | WebSocket bind address (default: `127.0.0.1:7600`) |
 
-See [SECURITY.md](./SECURITY.md). Highlights:
-
-- Token via env only (never in `config.toml` or `.env` committed).
-- Cloning requires explicit **consent**; every clone is **watermarked** with an
-  embedded user id + timestamp for provenance.
-- **Rate limiting** per user + **audit log** of every action.
-- Input **sanitization** before it reaches the LLM/TTS.
-
-## Scaling Roadmap
-
-All six items are implemented in v2.1.0 ✅
-
-1. ✅ **Persist memory** — conversation store backed by SQLite (WAL);
-   per-user memory JSON survives restarts.
-2. ✅ **Webhook mode** — set `ANUBIS_TELEGRAM_MODE=webhook` +
-   `ANUBIS_WEBHOOK_URL`; swap long-poll for a webhook behind Caddy/nginx.
-3. ✅ **Worker pool** — bounded semaphores for TTS + clone synthesis so
-   heavy jobs never block chat.
-4. ✅ **Observability** — atomic Prometheus counters (`/metrics` on the
-   WebSocket server) + structured `tracing` logs.
-5. ✅ **Neural watermark** — 3×-redundant payload blocks, CRC-32, and
-   majority-vote decoding for anti-removal robustness.
-6. ✅ **Voice pack marketplace** — `/shop` to browse curated packs,
-   install/uninstall via inline callbacks.
-
-### Status
+## Status
 
 | Item | Status |
 |------|--------|
-| v2.1.0 released | `cargo build --release` ✅ |
 | fmt / clippy (`-D warnings`) | ✅ |
-| test suite (27 tests) | ✅ |
+| test suite (21 tests) | ✅ |
 | CI (fmt/clippy/test on ubuntu/macos/windows) | ✅ |
+| Real Piper models for every catalog voice | ✅ |
 
 ## License
 
@@ -223,4 +191,4 @@ All six items are implemented in v2.1.0 ✅
 
 ---
 
-<p align="center"><strong>🔱 ANUBIS Core</strong> · local-first · open-source · built with Rust</p>
+<p align="center"><strong>ANUBIS Core</strong> · local-first · open-source · built with Rust</p>

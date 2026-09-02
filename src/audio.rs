@@ -46,32 +46,4 @@ impl AudioProcessor {
         tokio::fs::remove_file(&out).await.ok();
         Ok(bytes)
     }
-
-    /// OGG/Opus bytes -> WAV path (caller must delete after use).
-    pub async fn ogg_to_wav(&self, ogg_bytes: &[u8]) -> Result<PathBuf> {
-        let inp = self.tmp_path("ogg");
-        let out = self.tmp_path("wav");
-        tokio::fs::write(&inp, ogg_bytes).await?;
-        let status = Command::new("ffmpeg")
-            .args([
-                "-y",
-                "-i",
-                inp.to_str().unwrap(),
-                "-ar",
-                "22050",
-                "-ac",
-                "1",
-                "-f",
-                "wav",
-                out.to_str().unwrap(),
-            ])
-            .stderr(std::process::Stdio::null())
-            .status()
-            .await?;
-        tokio::fs::remove_file(&inp).await.ok();
-        if !status.success() {
-            return Err(AnubisError::Audio("ffmpeg ogg->wav failed".into()));
-        }
-        Ok(out)
-    }
 }

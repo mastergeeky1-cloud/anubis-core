@@ -1,16 +1,12 @@
 mod audio;
 mod bot;
-mod cache;
-mod clone;
 mod config;
 mod db;
 mod error;
 mod i18n;
-mod marketplace;
 mod memory;
 mod metrics;
 mod noxis;
-mod security;
 mod tts;
 mod whisper;
 mod worker_pool;
@@ -32,7 +28,7 @@ async fn main() -> Result<()> {
 
     let cfg = Arc::new(config::Config::load()?);
     info!(
-        "ANUBIS Core starting — db={} (local-first, open source)",
+        "ANUBIS Voice Teacher starting — db={} (local-first, open source)",
         cfg.database.path
     );
 
@@ -57,15 +53,7 @@ async fn main() -> Result<()> {
         }
     );
 
-    // Voice clone engine (Chatterbox, MIT) — replaces old XTTS/F5.
-    let clone_engine = Arc::new(clone::ChatterboxCloner::new(
-        cfg.clone.url.clone(),
-        &cfg.clone.clones_dir,
-        cfg.clone.enabled,
-    ));
-    info!("Clone engine: chatterbox enabled={}", cfg.clone.enabled);
-
-    // Noxis Core — local LLM brain (llama.cpp / ollama compatible).
+    // Noxis Core — local LLM teacher brain (llama.cpp / ollama compatible).
     let noxis = Arc::new(noxis::NoxisCore::new(cfg.llm.clone()));
     info!(
         "Noxis Core LLM: {}",
@@ -88,16 +76,8 @@ async fn main() -> Result<()> {
     // Per-user conversation memory for Noxis Core (persisted in SQLite).
     let memory = Arc::new(memory::ConversationStore::new(database.clone(), 12));
 
-    let rate_limiter = Arc::new(security::RateLimiter::new(
-        cfg.security.rate_speak_per_min,
-        cfg.security.rate_clone_per_hr,
-    ));
-    let watermark = Arc::new(security::Watermarker::new(cfg.security.watermark_enabled));
-    let cache = Arc::new(cache::AudioCache::new(cfg.limits.cache_capacity));
-
     let worker_pool = Arc::new(worker_pool::WorkerPool::new(
-        tts_router.clone(),
-        clone_engine.clone(),
+        tts_router,
         audio.clone(),
         worker_pool::WorkerPoolConfig {
             max_synth: cfg.limits.max_concurrent_synth,
@@ -108,15 +88,10 @@ async fn main() -> Result<()> {
 
     let state = bot::AppState {
         db: database,
-        tts: tts_router,
-        clone_engine,
         noxis,
         audio,
         config: cfg,
         pending: Arc::new(dashmap::DashMap::new()),
-        rate_limiter,
-        cache,
-        watermark,
         whisper,
         memory,
         last_reply: Arc::new(dashmap::DashMap::new()),

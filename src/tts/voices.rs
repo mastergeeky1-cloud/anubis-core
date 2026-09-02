@@ -1,70 +1,9 @@
-/// Static voice catalogue.
-///
-/// Two engine families:
-///   • Piper  — CPU, MIT/Apache onnx models in `<voices_dir>/<lang>/<id>.onnx`
-///   • Kokoro — local neural sidecar (Apache-2.0) for `af_/am_/bf_/bm_/…` ids
-///
-/// `source` tells the UI which engine a voice belongs to (for grouping and so
-/// a voice that is listed but not yet downloaded is shown as "install via /setup").
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VoiceSource {
-    Piper,
-    Kokoro,
-}
-
 #[derive(Debug, Clone, Copy)]
 pub struct VoiceMeta {
     pub id: &'static str,
     pub lang: &'static str,
     pub name: &'static str,
     pub gender: &'static str,
-    pub quality: &'static str,
-    pub source: VoiceSource,
-}
-
-impl VoiceMeta {
-    /// Human label used in the voice gallery (icon + name + quality).
-    pub fn label(&self) -> String {
-        let icon = if self.gender == "female" {
-            "♀"
-        } else {
-            "♂"
-        };
-        format!("{} {} ({})", icon, self.name, self.quality)
-    }
-
-    /// Flag/emoji for the language group header in the gallery.
-    pub fn flag(&self) -> &'static str {
-        lang_flag(self.lang)
-    }
-
-    /// Engine name this voice is synthesized with (shown in the gallery).
-    pub fn source(&self) -> &'static str {
-        source_name(self.source)
-    }
-}
-
-pub fn lang_flag(lang: &str) -> &'static str {
-    match lang {
-        "en" => "🇬🇧",
-        "ar" => "🇸🇦",
-        "it" => "🇮🇹",
-        "fr" => "🇫🇷",
-        "es" => "🇪🇸",
-        "de" => "🇩🇪",
-        "ru" => "🇷🇺",
-        "hi" => "🇮🇳",
-        "tr" => "🇹🇷",
-        "pt" => "🇧🇷",
-        _ => "🌐",
-    }
-}
-
-pub fn source_name(src: VoiceSource) -> &'static str {
-    match src {
-        VoiceSource::Piper => "Piper",
-        VoiceSource::Kokoro => "Kokoro",
-    }
 }
 
 pub const VOICES: &[VoiceMeta] = &[
@@ -74,80 +13,48 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "en",
         name: "Amy",
         gender: "female",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "en_US-amy-high",
-        lang: "en",
-        name: "Amy",
-        gender: "female",
-        quality: "high",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "en_US-ryan-high",
         lang: "en",
         name: "Ryan",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "en_US-ryan-medium",
         lang: "en",
         name: "Ryan",
         gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "en_GB-alan-low",
         lang: "en",
         name: "Alan",
         gender: "male",
-        quality: "low",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "en_US-lessac-medium",
         lang: "en",
         name: "Lessac",
         gender: "female",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "en_US-lessac-high",
         lang: "en",
         name: "Lessac",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "en_US-hubert-high",
-        lang: "en",
-        name: "Hubert",
-        gender: "male",
-        quality: "high",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "en_GB-cori-high",
         lang: "en",
         name: "Cori",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "en_GB-northern_english_male-medium",
         lang: "en",
         name: "Northern",
         gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     // ── Arabic (Piper, official) ──────────────────────────────────────────
     VoiceMeta {
@@ -155,99 +62,12 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "ar",
         name: "Kareem",
         gender: "male",
-        quality: "low",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "ar_JO-kareem-medium",
         lang: "ar",
         name: "Kareem",
         gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    // ── Arabic (community Piper packs — install via scripts/setup.sh) ──────
-    VoiceMeta {
-        id: "ar-zayd0-diacritized",
-        lang: "ar",
-        name: "Zayd0 (Diacritized)",
-        gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "ar_AE-emirati-female",
-        lang: "ar",
-        name: "Emirati (Female)",
-        gender: "female",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    // ── Arabic — High-Quality Piper (Egyptian, Saudi, Moroccan dialects) ───
-    VoiceMeta {
-        id: "ar_EG-hossam-medium",
-        lang: "ar",
-        name: "Hossam (Egyptian)",
-        gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "ar_SA-mohammed-medium",
-        lang: "ar",
-        name: "Mohammed (Saudi)",
-        gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "ar_MA-youssef-medium",
-        lang: "ar",
-        name: "Youssef (Moroccan)",
-        gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "ar_EG-omar-high",
-        lang: "ar",
-        name: "Omar (Egyptian)",
-        gender: "male",
-        quality: "high",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "ar_EG-aya-high",
-        lang: "ar",
-        name: "Aya (Egyptian Female)",
-        gender: "female",
-        quality: "high",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "ar_SA-layla-high",
-        lang: "ar",
-        name: "Layla (Saudi Female)",
-        gender: "female",
-        quality: "high",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "ar_EG-sami-medium",
-        lang: "ar",
-        name: "Sami (Egyptian)",
-        gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    // ── Arabic — Kokoro (if available) ──────────────────────────────────────
-    VoiceMeta {
-        id: "am_arabic",
-        lang: "ar",
-        name: "Arabic (Kokoro)",
-        gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     // ── Italian ───────────────────────────────────────────────────────────
     VoiceMeta {
@@ -255,91 +75,31 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "it",
         name: "Riccardo",
         gender: "male",
-        quality: "low",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "it_IT-paola-medium",
         lang: "it",
         name: "Paola",
         gender: "female",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    // ── Italian — High-Quality Piper ────────────────────────────────────────
-    VoiceMeta {
-        id: "it_IT-federico-high",
-        lang: "it",
-        name: "Federico",
-        gender: "male",
-        quality: "high",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "it_IT-giovanna-high",
-        lang: "it",
-        name: "Giovanna",
-        gender: "female",
-        quality: "high",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "it_IT-luca-medium",
-        lang: "it",
-        name: "Luca",
-        gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "it_IT-sofia-medium",
-        lang: "it",
-        name: "Sofia",
-        gender: "female",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "it_IT-alessandro-high",
-        lang: "it",
-        name: "Alessandro",
-        gender: "male",
-        quality: "high",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "it_IT-carla-high",
-        lang: "it",
-        name: "Carla",
-        gender: "female",
-        quality: "high",
-        source: VoiceSource::Piper,
-    },
-    // ── Italian — Kokoro ────────────────────────────────────────────────────
-    VoiceMeta {
-        id: "am_italian",
-        lang: "it",
-        name: "Italian (Kokoro)",
-        gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     // ── French ────────────────────────────────────────────────────────────
+    VoiceMeta {
+        id: "fr_FR-siwis-low",
+        lang: "fr",
+        name: "Siwis",
+        gender: "female",
+    },
     VoiceMeta {
         id: "fr_FR-siwis-medium",
         lang: "fr",
         name: "Siwis",
         gender: "female",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "fr_FR-upmc-medium",
         lang: "fr",
         name: "UPMC",
         gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     // ── Spanish ───────────────────────────────────────────────────────────
     VoiceMeta {
@@ -347,16 +107,18 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "es",
         name: "MLS",
         gender: "female",
-        quality: "low",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "es_ES-carlfm-x_low",
         lang: "es",
         name: "Carlos",
         gender: "male",
-        quality: "low",
-        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "es_ES-davefx-medium",
+        lang: "es",
+        name: "Dave",
+        gender: "male",
     },
     // ── German ────────────────────────────────────────────────────────────
     VoiceMeta {
@@ -364,50 +126,50 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "de",
         name: "Thorsten",
         gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "de_DE-eva_k-x_low",
         lang: "de",
         name: "Eva",
         gender: "female",
-        quality: "low",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "de_DE-thorsten-high",
         lang: "de",
         name: "Thorsten",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Piper,
     },
     // ── Russian ───────────────────────────────────────────────────────────
     VoiceMeta {
-        id: "ru_RU-irinia-medium",
+        id: "ru_RU-irina-medium",
         lang: "ru",
-        name: "Irinia",
+        name: "Irina",
         gender: "female",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     VoiceMeta {
         id: "ru_RU-ruslan-medium",
         lang: "ru",
         name: "Ruslan",
         gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
+    },
+    VoiceMeta {
+        id: "ru_RU-denis-medium",
+        lang: "ru",
+        name: "Denis",
+        gender: "male",
     },
     // ── Hindi ─────────────────────────────────────────────────────────────
     VoiceMeta {
-        id: "hi_IN-deepika-medium",
+        id: "hi_IN-pratham-medium",
         lang: "hi",
-        name: "Deepika",
+        name: "Pratham",
+        gender: "male",
+    },
+    VoiceMeta {
+        id: "hi_IN-priyamvada-medium",
+        lang: "hi",
+        name: "Priyamvada",
         gender: "female",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     // ── Turkish ────────────────────────────────────────────────────────────
     VoiceMeta {
@@ -415,8 +177,6 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "tr",
         name: "DFKI",
         gender: "female",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     // ── Portuguese ────────────────────────────────────────────────────────
     VoiceMeta {
@@ -424,16 +184,6 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "pt",
         name: "Faber",
         gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
-    },
-    VoiceMeta {
-        id: "pt_PT-tugao-medium",
-        lang: "pt",
-        name: "Tugão",
-        gender: "male",
-        quality: "medium",
-        source: VoiceSource::Piper,
     },
     // ── Kokoro (Apache-2.0) local neural TTS — full catalogue ─────────────
     // American English — female
@@ -442,88 +192,66 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "en",
         name: "Heart (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_bella",
         lang: "en",
         name: "Bella (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_sky",
         lang: "en",
         name: "Sky (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_nova",
         lang: "en",
         name: "Nova (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_sarah",
         lang: "en",
         name: "Sarah (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_alloy",
         lang: "en",
         name: "Alloy (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_nicole",
         lang: "en",
         name: "Nicole (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_jessica",
         lang: "en",
         name: "Jessica (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_river",
         lang: "en",
         name: "River (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_aoede",
         lang: "en",
         name: "Aoede (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "af_kore",
         lang: "en",
         name: "Kore (Kokoro)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     // American English — male
     VoiceMeta {
@@ -531,72 +259,54 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "en",
         name: "Adam (Kokoro)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "am_michael",
         lang: "en",
         name: "Michael (Kokoro)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "am_onyx",
         lang: "en",
         name: "Onyx (Kokoro)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "am_echo",
         lang: "en",
         name: "Echo (Kokoro)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "am_eric",
         lang: "en",
         name: "Eric (Kokoro)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "am_liam",
         lang: "en",
         name: "Liam (Kokoro)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "am_puck",
         lang: "en",
         name: "Puck (Kokoro)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "am_fenrir",
         lang: "en",
         name: "Fenrir (Kokoro)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "am_santa",
         lang: "en",
         name: "Santa (Kokoro)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     // British English — female
     VoiceMeta {
@@ -604,32 +314,24 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "en",
         name: "Emma (UK)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "bf_alice",
         lang: "en",
         name: "Alice (UK)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "bf_isabella",
         lang: "en",
         name: "Isabella (UK)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "bf_lily",
         lang: "en",
         name: "Lily (UK)",
         gender: "female",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     // British English — male
     VoiceMeta {
@@ -637,40 +339,30 @@ pub const VOICES: &[VoiceMeta] = &[
         lang: "en",
         name: "George (UK)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "bm_daniel",
         lang: "en",
         name: "Daniel (UK)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "bm_fred",
         lang: "en",
         name: "Fred (UK)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "bm_leo",
         lang: "en",
         name: "Leo (UK)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
     VoiceMeta {
         id: "bm_pierre",
         lang: "fr",
         name: "Pierre (FR)",
         gender: "male",
-        quality: "high",
-        source: VoiceSource::Kokoro,
     },
 ];
 
@@ -684,7 +376,7 @@ pub fn for_lang(lang: &str) -> Vec<&'static VoiceMeta> {
     VOICES.iter().filter(|v| v.lang == lang).collect()
 }
 
-/// All Arabic voices (official + community). Surfaced under the 🇸🇦 header and
+/// All Arabic voices (official + Kokoro). Surfaced under the 🇸🇦 header and
 /// used by the tests.
 #[allow(dead_code)]
 pub fn arabic_voices() -> Vec<&'static VoiceMeta> {
@@ -694,13 +386,13 @@ pub fn arabic_voices() -> Vec<&'static VoiceMeta> {
 /// Best (highest-quality, most natural) voice id per supported language.
 pub const BEST_VOICE_PER_LANG: &[(&str, &str)] = &[
     ("en", "en_US-ryan-high"),
-    ("ar", "ar_EG-aya-high"),
-    ("it", "it_IT-federico-high"),
+    ("ar", "ar_JO-kareem-medium"),
+    ("it", "it_IT-paola-medium"),
     ("fr", "fr_FR-siwis-medium"),
-    ("es", "es_ES-mls_10246-low"),
+    ("es", "es_ES-davefx-medium"),
     ("de", "de_DE-thorsten-high"),
-    ("ru", "ru_RU-irinia-medium"),
-    ("hi", "hi_IN-deepika-medium"),
+    ("ru", "ru_RU-irina-medium"),
+    ("hi", "hi_IN-priyamvada-medium"),
     ("tr", "tr_TR-dfki-medium"),
     ("pt", "pt_BR-faber-medium"),
 ];
@@ -723,44 +415,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn arabic_has_multiple_real_voices() {
+    fn arabic_has_real_voices() {
         let ar = arabic_voices();
-        // Official Kareem (low + medium) plus the two community packs.
         assert!(
-            ar.len() >= 4,
-            "expected >=4 Arabic voices, got {}",
+            ar.len() >= 2,
+            "expected >=2 Arabic voices, got {}",
             ar.len()
         );
         let ids: Vec<&str> = ar.iter().map(|v| v.id).collect();
         assert!(ids.contains(&"ar_JO-kareem-low"));
         assert!(ids.contains(&"ar_JO-kareem-medium"));
-        assert!(ids.contains(&"ar-zayd0-diacritized"));
-        assert!(ids.contains(&"ar_AE-emirati-female"));
-        // No fake/empty ids.
         assert!(ar.iter().all(|v| !v.id.is_empty() && !v.name.is_empty()));
-    }
-
-    #[test]
-    fn flag_covers_all_catalogue_langs() {
-        for v in VOICES {
-            let f = lang_flag(v.lang);
-            assert_ne!(f, "🌐", "voice {} has unmapped lang {}", v.id, v.lang);
-        }
-    }
-
-    #[test]
-    fn label_includes_gender_icon_and_quality() {
-        let v = find("en_US-amy-medium").unwrap();
-        let l = v.label();
-        assert!(l.contains("Amy"));
-        assert!(l.contains("medium"));
-        assert!(l.contains('♀') || l.contains('♂'));
-    }
-
-    #[test]
-    fn source_name_roundtrips() {
-        assert_eq!(source_name(VoiceSource::Piper), "Piper");
-        assert_eq!(source_name(VoiceSource::Kokoro), "Kokoro");
     }
 
     #[test]
@@ -790,14 +455,11 @@ mod tests {
     }
 
     #[test]
-    fn italian_has_female_and_male_high() {
+    fn italian_has_female_and_male() {
         let it = for_lang("it");
-        let high: Vec<&str> = it
-            .iter()
-            .filter(|v| v.quality == "high")
-            .map(|v| v.id)
-            .collect();
-        assert!(high.iter().any(|id| id.contains("federico")));
-        assert!(high.iter().any(|id| id.contains("giovanna")));
+        assert!(it.iter().any(|v| v.gender == "female"));
+        assert!(it.iter().any(|v| v.gender == "male"));
+        assert!(it.iter().any(|v| v.id.contains("riccardo")));
+        assert!(it.iter().any(|v| v.id.contains("paola")));
     }
 }

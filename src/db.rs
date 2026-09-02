@@ -11,35 +11,6 @@ pub struct Database {
     pool: Pool<SqliteConnectionManager>,
 }
 
-#[derive(Debug, Clone)]
-pub struct User {
-    #[allow(dead_code)]
-    pub id: i64,
-    #[allow(dead_code)]
-    pub username: Option<String>,
-    pub lang: String,
-    pub credits: i32,
-    pub daily_used: i32,
-    pub daily_reset: String,
-    pub active_voice: String,
-    #[allow(dead_code)]
-    pub consent_at: Option<String>,
-    #[allow(dead_code)]
-    pub banned: bool,
-    #[allow(dead_code)]
-    pub teacher_mode: bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct VoiceClone {
-    pub id: String,
-    pub user_id: i64,
-    pub name: String,
-    pub wav_path: String,
-    pub ref_text: String,
-    pub created_at: String,
-}
-
 const MIGRATION: &str = "
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
@@ -51,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     credits      INTEGER NOT NULL DEFAULT 3,
     daily_used   INTEGER NOT NULL DEFAULT 0,
     daily_reset  TEXT    NOT NULL DEFAULT '',
-    active_voice TEXT    NOT NULL DEFAULT 'en_US-amy-medium',
+    active_voice TEXT    NOT NULL DEFAULT '',
     consent_at   TEXT,
     banned       INTEGER NOT NULL DEFAULT 0,
     memory       TEXT    NOT NULL DEFAULT '[]',
@@ -107,17 +78,6 @@ impl Database {
             // Idempotent migrations for databases created before a column was
             // added to `users` (CREATE TABLE IF NOT EXISTS won't alter existing
             // tables).
-            let has_pack: i64 = c.query_row(
-                "SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='installed_pack'",
-                [],
-                |r| r.get(0),
-            )?;
-            if has_pack == 0 {
-                c.execute(
-                    "ALTER TABLE users ADD COLUMN installed_pack TEXT NOT NULL DEFAULT ''",
-                    [],
-                )?;
-            }
             let has_teacher: i64 = c.query_row(
                 "SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='teacher_mode'",
                 [],
@@ -142,7 +102,6 @@ impl Database {
         self.pool.get().map_err(AnubisError::from)
     }
 
-    /// Append-only security/audit trail.
     pub fn audit(&self, user_id: i64, action: &str, detail: &str) {
         if let Ok(c) = self.conn() {
             let _ = c.execute(
@@ -162,34 +121,6 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_user(&self, id: i64) -> Result<Option<User>> {
-        let c = self.conn()?;
-        let mut stmt = c.prepare(
-            "SELECT id, username, lang, credits, daily_used, daily_reset,
-                    active_voice, consent_at, banned, teacher_mode
-             FROM users WHERE id = ?1",
-        )?;
-        let res = stmt.query_row(params![id], |r| {
-            Ok(User {
-                id: r.get(0)?,
-                username: r.get(1)?,
-                lang: r.get(2)?,
-                credits: r.get(3)?,
-                daily_used: r.get(4)?,
-                daily_reset: r.get(5)?,
-                active_voice: r.get(6)?,
-                consent_at: r.get(7)?,
-                banned: r.get::<_, i32>(8)? != 0,
-                teacher_mode: r.get::<_, i32>(9)? != 0,
-            })
-        });
-        match res {
-            Ok(u) => Ok(Some(u)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-
     pub fn set_lang(&self, user_id: i64, lang: &str) -> Result<()> {
         let c = self.conn()?;
         c.execute(
@@ -202,12 +133,12 @@ impl Database {
     /// Get user's active voice.
     pub fn active_voice(&self, user_id: i64) -> String {
         let Ok(c) = self.conn() else {
-            return String::new();
+            return voices::default_for_lang("en").to_string();
         };
         c.query_row(
             "SELECT active_voice FROM users WHERE id = ?1",
             params![user_id],
-            |r| r.get(0),
+            |r| r.get::<_, String>(0),
         )
         .unwrap_or_else(|_| voices::default_for_lang("en").to_string())
     }
@@ -220,7 +151,7 @@ impl Database {
         c.query_row(
             "SELECT lang FROM users WHERE id = ?1",
             params![user_id],
-            |r| r.get(0),
+            |r| r.get::<_, String>(0),
         )
         .unwrap_or_else(|_| "en".to_string())
     }
@@ -234,17 +165,6 @@ impl Database {
         Ok(())
     }
 
-    /// Record which marketplace pack a user installed ('' = none).
-    pub fn set_installed_pack(&self, user_id: i64, pack_id: &str) -> Result<()> {
-        let c = self.conn()?;
-        c.execute(
-            "UPDATE users SET installed_pack = ?1 WHERE id = ?2",
-            params![pack_id, user_id],
-        )?;
-        Ok(())
-    }
-
-    /// Enable/disable teacher mode for a user.
     pub fn set_teacher_mode(&self, user_id: i64, enabled: bool) -> Result<()> {
         let c = self.conn()?;
         c.execute(
@@ -254,9 +174,10 @@ impl Database {
         Ok(())
     }
 
-    /// Get teacher mode status for a user.
     pub fn teacher_mode(&self, user_id: i64) -> bool {
-        let Ok(c) = self.conn() else { return false };
+        let Ok(c) = self.conn() else {
+            return false;
+        };
         c.query_row(
             "SELECT teacher_mode FROM users WHERE id = ?1",
             params![user_id],
@@ -268,233 +189,7 @@ impl Database {
         .unwrap_or(false)
     }
 
-    /// The marketplace pack id the user currently has installed, or "".
-    pub fn installed_pack(&self, user_id: i64) -> String {
-        let Ok(c) = self.conn() else {
-            return String::new();
-        };
-        c.query_row(
-            "SELECT installed_pack FROM users WHERE id = ?1",
-            params![user_id],
-            |r| r.get(0),
-        )
-        .unwrap_or_default()
-    }
-
-    pub fn has_consent(&self, user_id: i64) -> bool {
-        let Ok(c) = self.conn() else { return false };
-        c.query_row(
-            "SELECT 1 FROM users WHERE id = ?1 AND consent_at IS NOT NULL",
-            params![user_id],
-            |_| Ok(()),
-        )
-        .is_ok()
-    }
-
-    pub fn set_consent(&self, user_id: i64) -> Result<()> {
-        let c = self.conn()?;
-        let now = Utc::now().to_rfc3339();
-        c.execute(
-            "UPDATE users SET consent_at = ?1 WHERE id = ?2",
-            params![now, user_id],
-        )?;
-        Ok(())
-    }
-
-    pub fn is_banned(&self, user_id: i64) -> bool {
-        let Ok(c) = self.conn() else { return false };
-        c.query_row(
-            "SELECT banned FROM users WHERE id = ?1",
-            params![user_id],
-            |r| r.get::<_, i32>(0),
-        )
-        .map(|v| v != 0)
-        .unwrap_or(false)
-    }
-
-    pub fn ban_user(&self, user_id: i64, banned: bool) -> Result<()> {
-        let c = self.conn()?;
-        c.execute(
-            "UPDATE users SET banned = ?1 WHERE id = ?2",
-            params![banned as i32, user_id],
-        )?;
-        Ok(())
-    }
-
-    pub fn consume_credit(&self, user_id: i64, free_daily: i32, unlimited: bool) -> Result<bool> {
-        if unlimited {
-            return Ok(true);
-        }
-        let user = match self.get_user(user_id)? {
-            Some(u) => u,
-            None => return Ok(false),
-        };
-        let today = Utc::now().date_naive().to_string();
-        let c = self.conn()?;
-        let daily_used = if user.daily_reset != today {
-            c.execute(
-                "UPDATE users SET daily_used = 0, daily_reset = ?1 WHERE id = ?2",
-                params![today, user_id],
-            )?;
-            0
-        } else {
-            user.daily_used
-        };
-        if daily_used < free_daily {
-            c.execute(
-                "UPDATE users SET daily_used = daily_used + 1 WHERE id = ?1",
-                params![user_id],
-            )?;
-            self.log_credit_conn(&c, user_id, -1, "daily_free")?;
-            return Ok(true);
-        }
-        if user.credits > 0 {
-            c.execute(
-                "UPDATE users SET credits = credits - 1 WHERE id = ?1",
-                params![user_id],
-            )?;
-            self.log_credit_conn(&c, user_id, -1, "paid_credit")?;
-            return Ok(true);
-        }
-        Ok(false)
-    }
-
-    pub fn add_credits(&self, user_id: i64, amount: i32, reason: &str) -> Result<()> {
-        let c = self.conn()?;
-        c.execute(
-            "UPDATE users SET credits = credits + ?1 WHERE id = ?2",
-            params![amount, user_id],
-        )?;
-        self.log_credit_conn(&c, user_id, amount, reason)
-    }
-
-    /// Idempotently record a Telegram Stars payment and credit the user.
-    ///
-    /// `charge_id` is the Telegram-provided `telegram_payment_charge_id`,
-    /// which is unique per payment. Because `payments.charge_id` is UNIQUE,
-    /// replaying the same `successful_payment` update (e.g. due to a retry)
-    /// is detected and we do NOT double-credit.
-    ///
-    /// Returns `true` if the credits were newly granted, `false` if this
-    /// charge was already recorded (replay) or the user was missing.
-    pub fn record_payment(
-        &self,
-        charge_id: &str,
-        payload: &str,
-        user_id: i64,
-        credits: i32,
-        stars: i32,
-    ) -> bool {
-        // User must exist before we credit them.
-        if self.get_user(user_id).ok().flatten().is_none() {
-            return false;
-        }
-        let c = match self.conn() {
-            Ok(c) => c,
-            Err(_) => return false,
-        };
-        let now = Utc::now().to_rfc3339();
-        // INSERT OR IGNORE: if charge_id already exists, no row is inserted.
-        let inserted = c
-            .execute(
-                "INSERT OR IGNORE INTO payments (charge_id, payload, user_id, credits, stars, created_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params![charge_id, payload, user_id, credits, stars, now],
-            )
-            .unwrap_or(0);
-        if inserted == 0 {
-            // Already recorded — treat as replay and do not credit again.
-            return false;
-        }
-        // Fresh payment: credit the user atomically with a ledger entry.
-        c.execute(
-            "UPDATE users SET credits = credits + ?1 WHERE id = ?2",
-            params![credits, user_id],
-        )
-        .map(|_| self.log_credit_conn(&c, user_id, credits, "telegram_stars"))
-        .is_ok()
-    }
-
-    fn log_credit_conn(
-        &self,
-        c: &rusqlite::Connection,
-        user_id: i64,
-        delta: i32,
-        reason: &str,
-    ) -> Result<()> {
-        let now = Utc::now().to_rfc3339();
-        c.execute(
-            "INSERT INTO credit_log (user_id, delta, reason, created_at) VALUES (?1, ?2, ?3, ?4)",
-            params![user_id, delta, reason, now],
-        )?;
-        Ok(())
-    }
-
-    pub fn save_clone(&self, clone: &VoiceClone) -> Result<()> {
-        let c = self.conn()?;
-        c.execute(
-            "INSERT OR REPLACE INTO voice_clones (id, user_id, name, wav_path, ref_text, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![clone.id, clone.user_id, clone.name, clone.wav_path, clone.ref_text, clone.created_at],
-        )?;
-        Ok(())
-    }
-
-    pub fn get_clones(&self, user_id: i64) -> Result<Vec<VoiceClone>> {
-        let c = self.conn()?;
-        let mut stmt = c.prepare(
-            "SELECT id, user_id, name, wav_path, ref_text, created_at
-             FROM voice_clones WHERE user_id = ?1 ORDER BY created_at DESC",
-        )?;
-        let rows = stmt
-            .query_map(params![user_id], |r| {
-                Ok(VoiceClone {
-                    id: r.get(0)?,
-                    user_id: r.get(1)?,
-                    name: r.get(2)?,
-                    wav_path: r.get(3)?,
-                    ref_text: r.get(4)?,
-                    created_at: r.get(5)?,
-                })
-            })?
-            .collect::<std::result::Result<Vec<_>, _>>()?;
-        Ok(rows)
-    }
-
-    pub fn get_latest_clone(&self, user_id: i64) -> Result<Option<VoiceClone>> {
-        let c = self.conn()?;
-        let mut stmt = c.prepare(
-            "SELECT id, user_id, name, wav_path, ref_text, created_at
-             FROM voice_clones WHERE user_id = ?1 ORDER BY created_at DESC LIMIT 1",
-        )?;
-        let res = stmt.query_row(params![user_id], |r| {
-            Ok(VoiceClone {
-                id: r.get(0)?,
-                user_id: r.get(1)?,
-                name: r.get(2)?,
-                wav_path: r.get(3)?,
-                ref_text: r.get(4)?,
-                created_at: r.get(5)?,
-            })
-        });
-        match res {
-            Ok(c) => Ok(Some(c)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-
-    pub fn delete_clone(&self, clone_id: &str, user_id: i64) -> Result<bool> {
-        let c = self.conn()?;
-        let n = c.execute(
-            "DELETE FROM voice_clones WHERE id = ?1 AND user_id = ?2",
-            params![clone_id, user_id],
-        )?;
-        Ok(n > 0)
-    }
-
-    /// Persist the full conversation memory JSON for a user. Upserts the user
-    /// row so memory works even for users never seen by `upsert_user`.
+    /// Persist the full conversation memory JSON for a user.
     pub fn save_memory(&self, user_id: i64, memory_json: &str) -> Result<()> {
         let c = self.conn()?;
         c.execute(
@@ -517,5 +212,80 @@ impl Database {
             Ok(s) => Ok(s),
             Err(_) => Ok("[]".to_string()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn test_db() -> Database {
+        INIT.call_once(|| {
+            let _ = tracing_subscriber::fmt::try_init();
+        });
+        Database::open(":memory:", 4).unwrap()
+    }
+
+    #[test]
+    fn upsert_user_and_get_lang() {
+        let db = test_db();
+        db.upsert_user(123, Some("alice")).unwrap();
+        assert_eq!(db.user_lang(123), "en");
+        db.set_lang(123, "ar").unwrap();
+        assert_eq!(db.user_lang(123), "ar");
+    }
+
+    #[test]
+    fn active_voice_defaults_for_lang() {
+        let db = test_db();
+        let voice = db.active_voice(999);
+        assert!(
+            !voice.is_empty(),
+            "should return a default voice for unknown user"
+        );
+    }
+
+    #[test]
+    fn set_active_voice() {
+        let db = test_db();
+        db.upsert_user(10, None).unwrap();
+        db.set_active_voice(10, "it_federico-medium").unwrap();
+        assert_eq!(db.active_voice(10), "it_federico-medium");
+    }
+
+    #[test]
+    fn teacher_mode_toggle() {
+        let db = test_db();
+        db.upsert_user(20, None).unwrap();
+        assert!(!db.teacher_mode(20));
+        db.set_teacher_mode(20, true).unwrap();
+        assert!(db.teacher_mode(20));
+        db.set_teacher_mode(20, false).unwrap();
+        assert!(!db.teacher_mode(20));
+    }
+
+    #[test]
+    fn audit_does_not_panic() {
+        let db = test_db();
+        db.audit(1, "test", "hello");
+    }
+
+    #[test]
+    fn memory_round_trip() {
+        let db = test_db();
+        db.upsert_user(30, None).unwrap();
+        db.save_memory(30, r#"[{"role":"user","content":"hi"}]"#)
+            .unwrap();
+        let json = db.load_memory(30).unwrap();
+        assert!(json.contains("hi"));
+    }
+
+    #[test]
+    fn memory_missing_user_returns_empty_array() {
+        let db = test_db();
+        assert_eq!(db.load_memory(999).unwrap(), "[]");
     }
 }
