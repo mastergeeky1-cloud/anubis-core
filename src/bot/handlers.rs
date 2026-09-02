@@ -9,7 +9,7 @@ use crate::bot::commands::Command;
 use crate::i18n;
 use crate::tts::voices;
 use teloxide::prelude::*;
-use teloxide::types::{ChatId, InputFile, Message, ParseMode, PreCheckoutQuery};
+use teloxide::types::{ChatId, InputFile, LabeledPrice, Message, ParseMode, PreCheckoutQuery};
 use tracing::warn;
 
 /// Helper: send an HTML-formatted text message.
@@ -48,6 +48,23 @@ pub async fn handle_command(
 pub async fn handle_message(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()> {
     let user_id = msg.from().map(|u| u.id.0 as i64).unwrap_or(0);
 
+    // If the message is a slash command, ignore any pending prompt and route
+    // it to command handling (it was not caught by filter_command because it
+    // is unregistered, so it lands here).
+    let is_slash = msg
+        .text()
+        .map(|t| t.trim().starts_with('/'))
+        .unwrap_or(false);
+
+    if is_slash {
+        let lang = st.db.user_lang(user_id);
+        let s = i18n::get(&lang);
+        send_html(&bot, msg.chat.id, s.unknown_command).await?;
+        send_html(&bot, msg.chat.id, s.help).await?;
+        st.pending.remove(&user_id);
+        return Ok(());
+    }
+
     if let Some((_, act)) = st.pending.remove(&user_id) {
         match act {
             PendingAction::AwaitingPrompt { kind } => {
@@ -67,13 +84,6 @@ pub async fn handle_message(bot: Bot, msg: Message, st: AppState) -> anyhow::Res
     if let Some(text) = msg.text() {
         let trimmed = text.trim();
         if trimmed.is_empty() {
-            return Ok(());
-        }
-        if trimmed.starts_with('/') {
-            let lang = st.db.user_lang(user_id);
-            let s = i18n::get(&lang);
-            send_html(&bot, msg.chat.id, s.unknown_command).await?;
-            send_html(&bot, msg.chat.id, s.help).await?;
             return Ok(());
         }
         do_ask(&bot, &msg, &st, trimmed).await?;
@@ -354,14 +364,29 @@ async fn cmd_upgrade(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()>
     let user_id = msg.from().map(|u| u.id.0 as i64).unwrap_or(0);
     let lang = st.db.user_lang(user_id);
     let s = i18n::get(&lang);
-    let user = st.db.get_user(user_id).ok().flatten();
-    let credits = user.map(|u| u.credits).unwrap_or(0);
-    if credits == 0 {
-        send_html(&bot, msg.chat.id, s.no_credits).await?;
-    } else {
-        send_html(&bot, msg.chat.id, s.upgrade_header).await?;
-    }
-    send_html(&bot, msg.chat.id, s.upgrade_info).await?;
+
+    st.db
+        .upsert_user(
+            user_id,
+            msg.from().and_then(|u| u.username.clone()).as_deref(),
+        )
+        .ok();
+
+    // 50 credits for 50 Telegram Stars.
+    let stars = 50;
+    let credits = 50;
+    let payload = format!("credits_{credits}");
+
+    bot.send_invoice(
+        msg.chat.id,
+        "ANUBIS — 50 Credits",
+        s.upgrade_info,
+        payload,
+        String::new(), // Telegram Stars: no provider token
+        "XTR",
+        vec![LabeledPrice::new("50 credits", stars)],
+    )
+    .await?;
     Ok(())
 }
 
@@ -374,18 +399,11 @@ async fn cmd_mystats(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()>
         Some(u) => (u.credits, u.daily_used),
         None => (0, 0),
     };
-    let text = format!(
-        "{}\n\n{} {}\n{} {}",
-        s.mystats_header,
-        i18n::get(&lang)
-            .credits_info
-            .split('\n')
-            .next()
-            .unwrap_or(""),
-        credits,
-        "Daily used:",
-        daily_used,
-    );
+    let credits_line = s
+        .credits_info
+        .replace("{credits}", &credits.to_string())
+        .replace("{used}", &daily_used.to_string());
+    let text = format!("{}\n\n{}", s.mystats_header, credits_line);
     send_html(&bot, msg.chat.id, &text).await?;
     Ok(())
 }

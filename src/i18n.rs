@@ -42,7 +42,6 @@ pub struct Strings {
     // Credits / Payments
     pub credits_info: &'static str,
     pub no_credits: &'static str,
-    pub upgrade_header: &'static str,
     pub upgrade_info: &'static str,
     pub payment_success: &'static str,
     pub payment_failed: &'static str,
@@ -101,7 +100,6 @@ static EN: Strings = Strings {
     credits_info: "⭐ Your credits: <b>{credits}</b>
 📅 Daily usage: <b>{used}/3</b> free",
     no_credits: "❌ No credits remaining. Use /upgrade to buy more with Telegram Stars.",
-    upgrade_header: "💳 <b>Upgrade with Telegram Stars</b>",
     upgrade_info: "• 50 credits = 50 Telegram Stars
 • Credits never expire
 • Use them to ask questions and hear speech",
@@ -146,7 +144,6 @@ static AR: Strings = Strings {
     credits_info: "⭐ رصيدك: <b>{credits}</b>
 📅 الاستخدام اليومي: <b>{used}/3</b> مجاني",
     no_credits: "❌ لا يوجد رصيد. استخدم /upgrade لشراء المزيد.",
-    upgrade_header: "💳 <b>ترقية بـ Telegram Stars</b>",
     upgrade_info: "• 50 رصيد = 50 نجمة تيليجرام
 • الرصيد لا ينتهي
 • استخدمه للأسئلة والكلام",
@@ -192,7 +189,6 @@ static IT: Strings = Strings {
     credits_info: "⭐ I tuoi crediti: <b>{credits}</b>
 📅 Uso giornaliero: <b>{used}/3</b> gratuiti",
     no_credits: "❌ Nessun credito. Usa /upgrade per acquistarne.",
-    upgrade_header: "💳 <b>Aggiorna con Telegram Stars</b>",
     upgrade_info: "• 50 crediti = 50 Telegram Stars
 • I crediti non scadono
 • Usali per domande e parlato",
@@ -238,7 +234,6 @@ static FR: Strings = Strings {
     credits_info: "⭐ Vos crédits : <b>{credits}</b>
 📅 Utilisation quotidienne : <b>{used}/3</b> gratuits",
     no_credits: "❌ Aucun crédit. Utilisez /upgrade pour en acheter.",
-    upgrade_header: "💳 <b>Mise à niveau avec Telegram Stars</b>",
     upgrade_info: "• 50 crédits = 50 Telegram Stars
 • Les crédits n'expirent pas
 • Utilisez-les pour questions et parole",
@@ -284,7 +279,6 @@ static ES: Strings = Strings {
     credits_info: "⭐ Tus créditos: <b>{credits}</b>
 📅 Uso diario: <b>{used}/3</b> gratuitos",
     no_credits: "❌ Sin créditos. Usa /upgrade para comprar más.",
-    upgrade_header: "💳 <b>Mejora con Telegram Stars</b>",
     upgrade_info: "• 50 créditos = 50 Telegram Stars
 • Los créditos no expiran
 • Úsalos para preguntas y voz",
@@ -330,7 +324,6 @@ static DE: Strings = Strings {
     credits_info: "⭐ Deine Credits: <b>{credits}</b>
 📅 Tagesnutzung: <b>{used}/3</b> kostenlos",
     no_credits: "❌ Keine Credits. Nutze /upgrade zum Kaufen.",
-    upgrade_header: "💳 <b>Aufrüsten mit Telegram Stars</b>",
     upgrade_info: "• 50 Credits = 50 Telegram Stars
 • Credits laufen nicht ab
 • Nutze sie für Fragen und Sprache",
@@ -376,7 +369,6 @@ static RU: Strings = Strings {
     credits_info: "⭐ Ваши кредиты: <b>{credits}</b>
 📅 Использовано сегодня: <b>{used}/3</b> бесплатно",
     no_credits: "❌ Нет кредитов. Используйте /upgrade для покупки.",
-    upgrade_header: "💳 <b>Улучшение за Telegram Stars</b>",
     upgrade_info: "• 50 кредитов = 50 Telegram Stars
 • Кредиты не истекают
 • Используйте для вопросов и речи",
@@ -422,7 +414,6 @@ static HI: Strings = Strings {
     credits_info: "⭐ आपके क्रेडिट: <b>{credits}</b>
 📅 दैनिक उपयोग: <b>{used}/3</b> मुफ्त",
     no_credits: "❌ कोई क्रेडिट नहीं। /upgrade से खरीदें।",
-    upgrade_header: "💳 <b>Telegram Stars से अपग्रेड करें</b>",
     upgrade_info: "• 50 क्रेडिट = 50 Telegram Stars
 • क्रेडिट कभी समाप्त नहीं होते
 • प्रश्नों और आवाज़ के लिए उपयोग करें",
@@ -468,7 +459,6 @@ static TR: Strings = Strings {
     credits_info: "⭐ Kredileriniz: <b>{credits}</b>
 📅 Günlük kullanım: <b>{used}/3</b> ücretsiz",
     no_credits: "❌ Kredi yok. /upgrade ile satın alın.",
-    upgrade_header: "💳 <b>Telegram Stars ile Yükseltin</b>",
     upgrade_info: "• 50 kredi = 50 Telegram Stars
 • Krediler asla dolmaz
 • Sorular ve ses için kullanın",
@@ -514,7 +504,6 @@ static PT: Strings = Strings {
     credits_info: "⭐ Seus créditos: <b>{credits}</b>
 📅 Uso diário: <b>{used}/3</b> gratuitos",
     no_credits: "❌ Sem créditos. Use /upgrade para comprar.",
-    upgrade_header: "💳 <b>Atualizar com Telegram Stars</b>",
     upgrade_info: "• 50 créditos = 50 Telegram Stars
 • Créditos não expiram
 • Use para perguntas e fala",
