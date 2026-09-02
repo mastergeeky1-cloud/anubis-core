@@ -12,6 +12,7 @@ pub struct Strings {
     pub brain_off: &'static str,
     pub reset_done: &'static str,
     pub no_voice_data: &'static str,
+    pub unknown_command: &'static str,
 
     // Teacher mode
     pub teacher_on: &'static str,
@@ -54,8 +55,8 @@ pub fn get(lang: &str) -> &'static Strings {
 }
 
 static EN: Strings = Strings {
-    welcome: "🎓 *ANUBIS Voice Teacher*\n\nYour multilingual AI language teacher.\n\n• Ask questions in any language\n• Hear your teacher speak back\n• Learn English, Arabic, Italian + more\n• Teacher mode: exercises, feedback, Socratic dialogue\n\n👇 Pick your language to begin:",
-    help: "*Commands*\n\n/ask `<text>` — Ask your teacher\n/speak `<text>` — Hear speech\n/voices — Choose a voice\n/lang — Change language\n/teacher `on|off` — Toggle teacher mode\n/reset — Reset conversation\n\n💡 Or just tap a button below!",
+    welcome: "🎓 <b>ANUBIS Voice Teacher</b>\n\nYour multilingual AI language teacher.\n\n• Ask questions in any language\n• Hear your teacher speak back\n• Learn English, Arabic, Italian + more\n• Teacher mode: exercises, feedback, Socratic dialogue\n\n👇 Pick your language to begin:",
+    help: "<b>Commands</b>\n\n/ask <i>[text]</i> — Ask your teacher\n/speak <i>[text]</i> — Hear speech\n/voices — Choose a voice\n/lang — Change language\n/teacher <i>on|off</i> — Toggle teacher mode\n/reset — Reset conversation\n\n💡 Or just tap a button below!",
     choose_lang: "🌐 Select your language:",
     lang_set: "✅ Language updated.",
     voice_set: "✅ Voice set.",
@@ -65,14 +66,15 @@ static EN: Strings = Strings {
     brain_off: "🧠 AI brain not configured (set ANUBIS_LLM_URL).",
     reset_done: "🧠 Conversation memory cleared.",
     no_voice_data: "ℹ️ No last reply to speak. Ask something first with /ask.",
+    unknown_command: "❓ <b>Unknown command.</b> Here's what I can do:",
 
-    teacher_on: "🎓 Teacher mode *enabled*. I'll teach you step by step.",
-    teacher_off: "🎓 Teacher mode *disabled*. Back to normal assistant.",
-    teacher_status_on: "🎓 Teacher mode: *ON*",
-    teacher_status_off: "🎓 Teacher mode: *OFF*",
-    teacher_usage: "Usage: `/teacher on|off`",
+    teacher_on: "🎓 Teacher mode <b>enabled</b>. I'll teach you step by step.",
+    teacher_off: "🎓 Teacher mode <b>disabled</b>. Back to normal assistant.",
+    teacher_status_on: "🎓 Teacher mode: <b>ON</b>",
+    teacher_status_off: "🎓 Teacher mode: <b>OFF</b>",
+    teacher_usage: "Usage: /teacher on|off",
 
-    menu_header: "🎓 *ANUBIS — Voice Teacher*\nChoose an action:",
+    menu_header: "🎓 <b>ANUBIS — Voice Teacher</b>\nChoose an action:",
     btn_ask: "🧠 Ask Teacher",
     btn_speak: "🔊 Speak",
     btn_voices: "🎙 Voices",
@@ -83,13 +85,13 @@ static EN: Strings = Strings {
 
     loading_think: "🧠 Thinking…",
 
-    voices_header: "🎙 *Available Voices*\n\nTap a voice to select it as your teacher's voice:",
+    voices_header: "🎙 <b>Available Voices</b>\n\nTap a voice to select it as your teacher's voice:",
     listen_hint: "🔊 Tap a voice to hear it",
 };
 
 static AR: Strings = Strings {
-    welcome: "🎓 *ANUBIS — معلم الصوت*\n\nمعلمك الذكي متعدد اللغات.\n\n• اسأل أسئلة بأي لغة\n• اسمع المعلم يتكلم\n• تعلم الإنجليزية والعربية والإيطالية والمزيد\n• وضع المعلم: تمارين، ملاحظات، حوار سقراطي\n\n👇 اختر لغتك للبدء:",
-    help: "*الأوامر*\n\n/ask `<سؤال>` — اسأل المعلم\n/speak `<نص>` — اسمع كلاماً\n/voices — اختر صوتاً\n/lang — غيّر اللغة\n/teacher `on|off` — تبديل وضع المعلم\n/reset — مسح المحادثة\n\n💡 أو اضغط الأزرار أدناه!",
+    welcome: "🎓 <b>ANUBIS — معلم الصوت</b>\n\nمعلمك الذكي متعدد اللغات.\n\n• اسأل أسئلة بأي لغة\n• اسمع المعلم يتكلم\n• تعلم الإنجليزية والعربية والإيطالية والمزيد\n• وضع المعلم: تمارين، ملاحظات، حوار سقراطي\n\n👇 اختر لغتك للبدء:",
+    help: "<b>الأوامر</b>\n\n/ask <i>[<سؤال>]</i> — اسأل المعلم\n/speak <i>[<نص>]</i> — اسمع كلاماً\n/voices — اختر صوتاً\n/lang — غيّر اللغة\n/teacher <i>[on|off]</i> — تبديل وضع المعلم\n/reset — مسح المحادثة\n\n💡 أو اضغط الأزرار أدناه!",
     choose_lang: "🌐 اختر لغتك:",
     lang_set: "✅ تم تحديث اللغة.",
     voice_set: "✅ تم تعيين الصوت.",
@@ -100,13 +102,13 @@ static AR: Strings = Strings {
     reset_done: "🧠 تم مسح ذاكرة المحادثة.",
     no_voice_data: "ℹ️ لا يوجد رد لتشغيله. اسأل بشيء أولاً.",
 
-    teacher_on: "🎓 تم تفعيل وضع المعلم *شغّال*. سأعلمك خطوة بخطوة.",
-    teacher_off: "🎓 تم تعطيل وضع المعلم *مطفأ*. عاد المساعد.",
-    teacher_status_on: "🎓 وضع المعلم: *شغّال*",
-    teacher_status_off: "🎓 وضع المعلم: *مطفأ*",
-    teacher_usage: "الاستخدام: `/teacher on|off`",
+    teacher_on: "🎓 تم تفعيل وضع المعلم <b>شغّال</b>. سأعلمك خطوة بخطوة.",
+    teacher_off: "🎓 تم تعطيل وضع المعلم <b>مطفأ</b>. عاد المساعد.",
+    teacher_status_on: "🎓 وضع المعلم: <b>شغّال</b>",
+    teacher_status_off: "🎓 وضع المعلم: <b>مطفأ</b>",
+    teacher_usage: "الاستخدام: <i>[/teacher on|off]</i>",
 
-    menu_header: "🎓 *ANUBIS — معلم الصوت*\nاختر إجراءً:",
+    menu_header: "🎓 <b>ANUBIS — معلم الصوت</b>\nاختر إجراءً:",
     btn_ask: "🧠 اسأل المعلم",
     btn_speak: "🔊 تحدث",
     btn_voices: "🎙 الأصوات",
@@ -117,13 +119,14 @@ static AR: Strings = Strings {
 
     loading_think: "🧠 يفكر…",
 
-    voices_header: "🎙 *الأصوات المتاحة*\n\nاضغط على صوت لاختياره كصوت المعلم:",
+    voices_header: "🎙 <b>الأصوات المتاحة</b>\n\nاضغط على صوت لاختياره كصوت المعلم:",
     listen_hint: "🔊 اضغط على صوت لسماعه",
+    unknown_command: "❓ <b>أمر غير معروف.</b> إليك ما يمكنني فعله:",
 };
 
 static IT: Strings = Strings {
-    welcome: "🎓 *ANUBIS — Insegnante Vocale*\n\nIl tuo insegnante di lingue AI multilingue.\n\n• Fai domande in qualsiasi lingua\n• Ascolta l'insegnante parlare\n• Impara inglese, arabo, italiano e altro\n• Modalità insegnante: esercizi, feedback, dialogo socratico\n\n👇 Scegli la tua lingua per iniziare:",
-    help: "*Comandi*\n\n/ask `<testo>` — Chiedi all'insegnante\n/speak `<testo>` — Ascolta un parlato\n/voices — Scegli una voce\n/lang — Cambia lingua\n/teacher `on|off` — Attiva/disattiva modalità insegnante\n/reset — Resetta conversazione\n\n💡 O tocca un pulsante qui sotto!",
+    welcome: "🎓 <b>ANUBIS — Insegnante Vocale</b>\n\nIl tuo insegnante di lingue AI multilingue.\n\n• Fai domande in qualsiasi lingua\n• Ascolta l'insegnante parlare\n• Impara inglese, arabo, italiano e altro\n• Modalità insegnante: esercizi, feedback, dialogo socratico\n\n👇 Scegli la tua lingua per iniziare:",
+    help: "<b>Comandi</b>\n\n/ask <i>[<testo>]</i> — Chiedi all'insegnante\n/speak <i>[<testo>]</i> — Ascolta un parlato\n/voices — Scegli una voce\n/lang — Cambia lingua\n/teacher <i>[on|off]</i> — Attiva/disattiva modalità insegnante\n/reset — Resetta conversazione\n\n💡 O tocca un pulsante qui sotto!",
     choose_lang: "🌐 Seleziona la lingua:",
     lang_set: "✅ Lingua aggiornata.",
     voice_set: "✅ Voce impostata.",
@@ -134,13 +137,13 @@ static IT: Strings = Strings {
     reset_done: "🧠 Memoria conversazione azzerata.",
     no_voice_data: "ℹ️ Nessuna risposta da leggere. Fai una domanda con /ask.",
 
-    teacher_on: "🎓 Modalità insegnante *attivata*. Ti guido passo passo.",
-    teacher_off: "🎓 Modalità insegnante *disattivata*. Torno all'assistente.",
-    teacher_status_on: "🎓 Modalità insegnante: *ON*",
-    teacher_status_off: "🎓 Modalità insegnante: *OFF*",
-    teacher_usage: "Uso: `/teacher on|off`",
+    teacher_on: "🎓 Modalità insegnante <b>attivata</b>. Ti guido passo passo.",
+    teacher_off: "🎓 Modalità insegnante <b>disattivata</b>. Torno all'assistente.",
+    teacher_status_on: "🎓 Modalità insegnante: <b>ON</b>",
+    teacher_status_off: "🎓 Modalità insegnante: <b>OFF</b>",
+    teacher_usage: "Uso: <i>[/teacher on|off]</i>",
 
-    menu_header: "🎓 *ANUBIS — Insegnante Vocale*\nScegli un'azione:",
+    menu_header: "🎓 <b>ANUBIS — Insegnante Vocale</b>\nScegli un'azione:",
     btn_ask: "🧠 Chiedi",
     btn_speak: "🔊 Parla",
     btn_voices: "🎙 Voci",
@@ -151,13 +154,14 @@ static IT: Strings = Strings {
 
     loading_think: "🧠 Sto pensando…",
 
-    voices_header: "🎙 *Voci Disponibili*\n\nTocca una voce per impostarla come voce dell'insegnante:",
+    voices_header: "🎙 <b>Voci Disponibili</b>\n\nTocca una voce per impostarla come voce dell'insegnante:",
     listen_hint: "🔊 Tocca una voce per ascoltarla",
+    unknown_command: "❓ <b>Comando sconosciuto.</b> Ecco cosa posso fare:",
 };
 
 static FR: Strings = Strings {
-    welcome: "🎓 *ANUBIS — Professeur Vocal*\n\nTon professeur de langues IA multilingue.\n\n• Pose des questions dans n'importe quelle langue\n• Écoute ton professeur parler\n• Apprends anglais, arabe, italien et plus\n• Mode prof: exercices, corrections, dialogue socratique\n\n👇 Choisis ta langue pour commencer :",
-    help: "*Commandes*\n\n/ask `<texte>` — Demande au prof\n/speak `<texte>` — Écute la parole\n/voices — Choisis une voce\n/lang — Change de langue\n/teacher `on|off` — Active le mode prof\n/reset — Réinitialise la conversation\n\n💡 Ou touche un bouton ci-dessous !",
+    welcome: "🎓 <b>ANUBIS — Professeur Vocal</b>\n\nTon professeur de langues IA multilingue.\n\n• Pose des questions dans n'importe quelle langue\n• Écoute ton professeur parler\n• Apprends anglais, arabe, italien et plus\n• Mode prof: exercices, corrections, dialogue socratique\n\n👇 Choisis ta langue pour commencer :",
+    help: "<b>Commandes</b>\n\n/ask <i>[<texte>]</i> — Demande au prof\n/speak <i>[<texte>]</i> — Écute la parole\n/voices — Choisis une voce\n/lang — Change de langue\n/teacher <i>[on|off]</i> — Active le mode prof\n/reset — Réinitialise la conversation\n\n💡 Ou touche un bouton ci-dessous !",
     choose_lang: "🌐 Choisissez votre langue :",
     lang_set: "✅ Langue mise à jour.",
     voice_set: "✅ Voix définie.",
@@ -168,13 +172,13 @@ static FR: Strings = Strings {
     reset_done: "🧠 Mémoire effacée.",
     no_voice_data: "ℹ️ Aucune réponse à lire. Demandez quelque chose avec /ask.",
 
-    teacher_on: "🎓 Mode prof *activé*. Je t'enseigne pas à pas.",
-    teacher_off: "🎓 Mode prof *désactivé*. Retour à l'assistant.",
-    teacher_status_on: "🎓 Mode prof : *ON*",
-    teacher_status_off: "🎓 Mode prof : *OFF*",
-    teacher_usage: "Usage : `/teacher on|off`",
+    teacher_on: "🎓 Mode prof <b>activé</b>. Je t'enseigne pas à pas.",
+    teacher_off: "🎓 Mode prof <b>désactivé</b>. Retour à l'assistant.",
+    teacher_status_on: "🎓 Mode prof : <b>ON</b>",
+    teacher_status_off: "🎓 Mode prof : <b>OFF</b>",
+    teacher_usage: "Usage : <i>[/teacher on|off]</i>",
 
-    menu_header: "🎓 *ANUBIS — Professeur Vocal*\nChoisissez :",
+    menu_header: "🎓 <b>ANUBIS — Professeur Vocal</b>\nChoisissez :",
     btn_ask: "🧠 Demander",
     btn_speak: "🔊 Parler",
     btn_voices: "🎙 Voix",
@@ -185,13 +189,14 @@ static FR: Strings = Strings {
 
     loading_think: "🧠 Je réfléchis…",
 
-    voices_header: "🎙 *Voix Disponibles*\n\nTouchez une voix pour la définir :",
+    voices_header: "🎙 <b>Voix Disponibles</b>\n\nTouchez une voix pour la définir :",
     listen_hint: "🔊 Touchez une voix pour l'écouter",
+    unknown_command: "❓ <b>Commande inconnue.</b> Voici ce que je peux faire:",
 };
 
 static ES: Strings = Strings {
-    welcome: "🎓 *ANUBIS — Profesor de Voz*\n\nTu profesor de idiomas IA multilingüe.\n\n• Pregunta en cualquier idioma\n• Escucha a tu profesor hablar\n• Aprende inglés, árabe, italiano y más\n• Modo profesor: ejercicios, retroalimentación, diálogo socrático\n\n👇 Elige tu idioma para empezar:",
-    help: "*Comandos*\n\n/ask `<texto>` — Pregúntale al profesor\n/speak `<texto>` — Escucha el habla\n/voices — Elige una voz\n/lang — Cambia idioma\n/teacher `on|off` — Activa modo profesor\n/reset — Reinicia conversación\n\n💡 ¡O toca un botón abajo!",
+    welcome: "🎓 <b>ANUBIS — Profesor de Voz</b>\n\nTu profesor de idiomas IA multilingüe.\n\n• Pregunta en cualquier idioma\n• Escucha a tu profesor hablar\n• Aprende inglés, árabe, italiano y más\n• Modo profesor: ejercicios, retroalimentación, diálogo socrático\n\n👇 Elige tu idioma para empezar:",
+    help: "<b>Comandos</b>\n\n/ask <i>[<texto>]</i> — Pregúntale al profesor\n/speak <i>[<texto>]</i> — Escucha el habla\n/voices — Elige una voz\n/lang — Cambia idioma\n/teacher <i>[on|off]</i> — Activa modo profesor\n/reset — Reinicia conversación\n\n💡 ¡O toca un botón abajo!",
     choose_lang: "🌐 Selecciona tu idioma:",
     lang_set: "✅ Idioma actualizado.",
     voice_set: "✅ Voz establecida.",
@@ -202,13 +207,13 @@ static ES: Strings = Strings {
     reset_done: "🧠 Memoria borrada.",
     no_voice_data: "ℹ️ Sin respuesta para escuchar. Pregunta algo con /ask.",
 
-    teacher_on: "🎓 Modo profesor *activado*. Te enseño paso a paso.",
-    teacher_off: "🎓 Modo profesor *desactivado*. De vuelta al asistente.",
-    teacher_status_on: "🎓 Modo profesor: *ON*",
-    teacher_status_off: "🎓 Modo profesor: *OFF*",
-    teacher_usage: "Uso: `/teacher on|off`",
+    teacher_on: "🎓 Modo profesor <b>activado</b>. Te enseño paso a paso.",
+    teacher_off: "🎓 Modo profesor <b>desactivado</b>. De vuelta al asistente.",
+    teacher_status_on: "🎓 Modo profesor: <b>ON</b>",
+    teacher_status_off: "🎓 Modo profesor: <b>OFF</b>",
+    teacher_usage: "Uso: <i>[/teacher on|off]</i>",
 
-    menu_header: "🎓 *ANUBIS — Profesor de Voz*\nElige:",
+    menu_header: "🎓 <b>ANUBIS — Profesor de Voz</b>\nElige:",
     btn_ask: "🧠 Preguntar",
     btn_speak: "🔊 Hablar",
     btn_voices: "🎙 Voces",
@@ -219,13 +224,14 @@ static ES: Strings = Strings {
 
     loading_think: "🧠 Pensando…",
 
-    voices_header: "🎙 *Voces Disponibles*\n\nToca una voz para seleccionarla:",
+    voices_header: "🎙 <b>Voces Disponibles</b>\n\nToca una voz para seleccionarla:",
     listen_hint: "🔊 Toca una voz para escucharla",
+    unknown_command: "❓ <b>Comando desconocido.</b> Esto es lo que puedo hacer:",
 };
 
 static DE: Strings = Strings {
-    welcome: "🎓 *ANUBIS — Sprachlehrer*\n\nDein mehrsprachiger KI-Sprachlehrer.\n\n• Stelle Fragen in jeder Sprache\n• Höre deinen Lehrer sprechen\n• Lerne Englisch, Arabisch, Italienisch und mehr\n• Lehrer-Modus: Übungen, Feedback, sokratischer Dialog\n\n👇 Wähle deine Sprache zum Starten:",
-    help: "*Befehle*\n\n/ask `<Text>` — Frage den Lehrer\n/speak `<Text>` — Sprache hören\n/voices — Stimme wählen\n/lang — Sprache ändern\n/teacher `on|off` — Lehrer-Modus\n/reset — Gespräch zurücksetzen\n\n💡 Oder tippe eine Schaltfläche!",
+    welcome: "🎓 <b>ANUBIS — Sprachlehrer</b>\n\nDein mehrsprachiger KI-Sprachlehrer.\n\n• Stelle Fragen in jeder Sprache\n• Höre deinen Lehrer sprechen\n• Lerne Englisch, Arabisch, Italienisch und mehr\n• Lehrer-Modus: Übungen, Feedback, sokratischer Dialog\n\n👇 Wähle deine Sprache zum Starten:",
+    help: "<b>Befehle</b>\n\n/ask <i>[<Text>]</i> — Frage den Lehrer\n/speak <i>[<Text>]</i> — Sprache hören\n/voices — Stimme wählen\n/lang — Sprache ändern\n/teacher <i>[on|off]</i> — Lehrer-Modus\n/reset — Gespräch zurücksetzen\n\n💡 Oder tippe eine Schaltfläche!",
     choose_lang: "🌐 Wähle deine Sprache:",
     lang_set: "✅ Sprache aktualisiert.",
     voice_set: "✅ Stimme gesetzt.",
@@ -236,13 +242,13 @@ static DE: Strings = Strings {
     reset_done: "🧠 Gesprächsspeicher gelöscht.",
     no_voice_data: "ℹ️ Keine Antwort zum Vorlesen. Frage zuerst mit /ask.",
 
-    teacher_on: "🎓 Lehrer-Modus *aktiviert*. Ich bringe es dir Schritt für Schritt bei.",
-    teacher_off: "🎓 Lehrer-Modus *deaktiviert*. Zurück zum Assistenten.",
-    teacher_status_on: "🎓 Lehrer-Modus: *AN*",
-    teacher_status_off: "🎓 Lehrer-Modus: *AUS*",
-    teacher_usage: "Verwendung: `/teacher on|off`",
+    teacher_on: "🎓 Lehrer-Modus <b>aktiviert</b>. Ich bringe es dir Schritt für Schritt bei.",
+    teacher_off: "🎓 Lehrer-Modus <b>deaktiviert</b>. Zurück zum Assistenten.",
+    teacher_status_on: "🎓 Lehrer-Modus: <b>AN</b>",
+    teacher_status_off: "🎓 Lehrer-Modus: <b>AUS</b>",
+    teacher_usage: "Verwendung: <i>[/teacher on|off]</i>",
 
-    menu_header: "🎓 *ANUBIS — Sprachlehrer*\nWähle:",
+    menu_header: "🎓 <b>ANUBIS — Sprachlehrer</b>\nWähle:",
     btn_ask: "🧠 Frage stellen",
     btn_speak: "🔊 Sprechen",
     btn_voices: "🎙 Stimmen",
@@ -253,13 +259,14 @@ static DE: Strings = Strings {
 
     loading_think: "🧠 Ich denke…",
 
-    voices_header: "🎙 *Verfügbare Stimmen*\n\nTippe eine Stimme zum Auswählen:",
+    voices_header: "🎙 <b>Verfügbare Stimmen</b>\n\nTippe eine Stimme zum Auswählen:",
     listen_hint: "🔊 Tippe eine Stimme zum Anhören",
+    unknown_command: "❓ <b>Unbekannter Befehl.</b> Hier ist, was ich kann:",
 };
 
 static RU: Strings = Strings {
-    welcome: "🎓 *ANUBIS — Голосовой Учитель*\n\nТвой многоязычный ИИ-учитель языков.\n\n• Задавай вопросы на любом языке\n• Слушай учителя\n• Учи английский, арабский, итальянский и ещё\n• Режим учителя: упражнения, обратная связь, сократический диалог\n\n👇 Выбери язык для начала:",
-    help: "*Команды*\n\n/ask `<текст>` — Спроси учителя\n/speak `<текст>` — Услышь речь\n/voices — Выбери голос\n/lang — Смени язык\n/teacher `on|off` — Режим учителя\n/reset — Сбросить диалог\n\n💡 Или нажми кнопку!",
+    welcome: "🎓 <b>ANUBIS — Голосовой Учитель</b>\n\nТвой многоязычный ИИ-учитель языков.\n\n• Задавай вопросы на любом языке\n• Слушай учителя\n• Учи английский, арабский, итальянский и ещё\n• Режим учителя: упражнения, обратная связь, сократический диалог\n\n👇 Выбери язык для начала:",
+    help: "<b>Команды</b>\n\n/ask <i>[<текст>]</i> — Спроси учителя\n/speak <i>[<текст>]</i> — Услышь речь\n/voices — Выбери голос\n/lang — Смени язык\n/teacher <i>[on|off]</i> — Режим учителя\n/reset — Сбросить диалог\n\n💡 Или нажми кнопку!",
     choose_lang: "🌐 Выберите язык:",
     lang_set: "✅ Язык обновлён.",
     voice_set: "✅ Голос установлен.",
@@ -270,13 +277,13 @@ static RU: Strings = Strings {
     reset_done: "🧠 Память очищена.",
     no_voice_data: "ℹ️ Нет ответа для озвучки. Спросите сначала.",
 
-    teacher_on: "🎓 Режим учителя *включён*. Учу пошагово.",
-    teacher_off: "🎓 Режим учителя *выключен*. Назад к ассистенту.",
-    teacher_status_on: "🎓 Режим учителя: *ВКЛ*",
-    teacher_status_off: "🎓 Режим учителя: *ВЫКЛ*",
-    teacher_usage: "Использование: `/teacher on|off`",
+    teacher_on: "🎓 Режим учителя <b>включён</b>. Учу пошагово.",
+    teacher_off: "🎓 Режим учителя <b>выключен</b>. Назад к ассистенту.",
+    teacher_status_on: "🎓 Режим учителя: <b>ВКЛ</b>",
+    teacher_status_off: "🎓 Режим учителя: <b>ВЫКЛ</b>",
+    teacher_usage: "Использование: <i>[/teacher on|off]</i>",
 
-    menu_header: "🎓 *ANUBIS — Голосовой Учитель*\nВыберите:",
+    menu_header: "🎓 <b>ANUBIS — Голосовой Учитель</b>\nВыберите:",
     btn_ask: "🧠 Спросить",
     btn_speak: "🔊 Говорить",
     btn_voices: "🎙 Голоса",
@@ -287,13 +294,14 @@ static RU: Strings = Strings {
 
     loading_think: "🧠 Думаю…",
 
-    voices_header: "🎙 *Доступные голоса*\n\nНажмите голос для выбора:",
+    voices_header: "🎙 <b>Доступные голоса</b>\n\nНажмите голос для выбора:",
     listen_hint: "🔊 Нажмите голос чтобы услышать",
+    unknown_command: "❓ <b>Неизвестная команда.</b> Вот что я могу:",
 };
 
 static HI: Strings = Strings {
-    welcome: "🎓 *ANUBIS — वॉयस टीचर*\n\nआपका बहुभाषी AI भाषा शिक्षक।\n\n• किसी भी भाषा में प्रश्न पूछें\n• शिक्षक को बोलते सुनें\n• अंग्रेज़ी, अरबी, इतालवी + और सीखें\n• टीचर मोड: अभ्यास, फ़ीडबैक, सुकराती संवाद\n\n👇 शुरू करने के लिए अपनी भाषा चुनें:",
-    help: "*कमांड*\n\n/ask `<पाठ>` — शिक्षक से पूछें\n/speak `<पाठ>` — बोल सुनें\n/voices — आवाज़ चुनें\n/lang — भाषा बदलें\n/teacher `on|off` — टीचर मोड\n/reset — बातचीत रीसेट\n\n💡 या नीचे बटन दबाएँ!",
+    welcome: "🎓 <b>ANUBIS — वॉयस टीचर</b>\n\nआपका बहुभाषी AI भाषा शिक्षक।\n\n• किसी भी भाषा में प्रश्न पूछें\n• शिक्षक को बोलते सुनें\n• अंग्रेज़ी, अरबी, इतालवी + और सीखें\n• टीचर मोड: अभ्यास, फ़ीडबैक, सुकराती संवाद\n\n👇 शुरू करने के लिए अपनी भाषा चुनें:",
+    help: "<b>कमांड</b>\n\n/ask <i>[<पाठ>]</i> — शिक्षक से पूछें\n/speak <i>[<पाठ>]</i> — बोल सुनें\n/voices — आवाज़ चुनें\n/lang — भाषा बदलें\n/teacher <i>[on|off]</i> — टीचर मोड\n/reset — बातचीत रीसेट\n\n💡 या नीचे बटन दबाएँ!",
     choose_lang: "🌐 अपनी भाषा चुनें:",
     lang_set: "✅ भाषा अपडेट।",
     voice_set: "✅ आवाज़ सेट।",
@@ -304,13 +312,13 @@ static HI: Strings = Strings {
     reset_done: "🧠 बातचीत साफ़।",
     no_voice_data: "ℹ️ सुनने के लिए कोई जवाब नहीं। पहले /ask पूछें।",
 
-    teacher_on: "🎓 टीचर मोड *चालू*। मैं आपको कदम-दर-कदम सिखाऊँगा।",
-    teacher_off: "🎓 टीचर मोड *बंद*। वापस असिस्टेंट।",
-    teacher_status_on: "🎓 टीचर मोड: *चालू*",
-    teacher_status_off: "🎓 टीचर मोड: *बंद*",
-    teacher_usage: "उपयोग: `/teacher on|off`",
+    teacher_on: "🎓 टीचर मोड <b>चालू</b>। मैं आपको कदम-दर-कदम सिखाऊँगा।",
+    teacher_off: "🎓 टीचर मोड <b>बंद</b>। वापस असिस्टेंट।",
+    teacher_status_on: "🎓 टीचर मोड: <b>चालू</b>",
+    teacher_status_off: "🎓 टीचर मोड: <b>बंद</b>",
+    teacher_usage: "उपयोग: <i>[/teacher on|off]</i>",
 
-    menu_header: "🎓 *ANUBIS — वॉयस टीचर*\nचुनें:",
+    menu_header: "🎓 <b>ANUBIS — वॉयस टीचर</b>\nचुनें:",
     btn_ask: "🧠 पूछें",
     btn_speak: "🔊 बोलें",
     btn_voices: "🎙 आवाज़ें",
@@ -321,13 +329,14 @@ static HI: Strings = Strings {
 
     loading_think: "🧠 सोच रहा हूँ…",
 
-    voices_header: "🎙 *उपलब्ध आवाज़ें*\n\nचुनने के लिए आवाज़ टैप करें:",
+    voices_header: "🎙 <b>उपलब्ध आवाज़ें</b>\n\nचुनने के लिए आवाज़ टैप करें:",
     listen_hint: "🔊 सुनने के लिए टैप करें",
+    unknown_command: "❓ <b>अज्ञात कमांड।</b> मैं यह कर सकता हूँ:",
 };
 
 static TR: Strings = Strings {
-    welcome: "🎓 *ANUBIS — Sesli Öğretmen*\n\nÇok dilli yapay zeka dil öğretmeni.\n\n• Herhangi bir dille soru sor\n• Öğretmeninin konuştuğunu dinle\n• İngilizce, Arapça, İtalyanca ve daha fazlasını öğren\n• Öğretmen modu: alıştırmalar, geri bildirim, Sokratik diyalog\n\n👇 Başlamak için dilini seç:",
-    help: "*Komutlar*\n\n/ask `<metin>` — Öğretmene sor\n/speak `<metin>` — Konuşmayı dinle\n/voices — Ses seç\n/lang — Dil değiştir\n/teacher `on|off` — Öğretmen modu\n/reset — konuşmayı sıfırla\n\n💡 Ya da aşağıdaki düğmeye dokun!",
+    welcome: "🎓 <b>ANUBIS — Sesli Öğretmen</b>\n\nÇok dilli yapay zeka dil öğretmeni.\n\n• Herhangi bir dille soru sor\n• Öğretmeninin konuştuğunu dinle\n• İngilizce, Arapça, İtalyanca ve daha fazlasını öğren\n• Öğretmen modu: alıştırmalar, geri bildirim, Sokratik diyalog\n\n👇 Başlamak için dilini seç:",
+    help: "<b>Komutlar</b>\n\n/ask <i>[<metin>]</i> — Öğretmene sor\n/speak <i>[<metin>]</i> — Konuşmayı dinle\n/voices — Ses seç\n/lang — Dil değiştir\n/teacher <i>[on|off]</i> — Öğretmen modu\n/reset — konuşmayı sıfırla\n\n💡 Ya da aşağıdaki düğmeye dokun!",
     choose_lang: "🌐 Dilinizi seçin:",
     lang_set: "✅ Dil güncellendi.",
     voice_set: "✅ Ses ayarlandı.",
@@ -338,13 +347,13 @@ static TR: Strings = Strings {
     reset_done: "🧠 Konuşma hafızası temizlendi.",
     no_voice_data: "ℹ️ Dinlenecek yanıt yok. Önce /ask ile sor.",
 
-    teacher_on: "🎓 Öğretmen modu *açıldı*. Adım adım öğretiyorum.",
-    teacher_off: "🎓 Öğretmen modu *kapatıldı*. Asistana dön.",
-    teacher_status_on: "🎓 Öğretmen modu: *AÇIK*",
-    teacher_status_off: "🎓 Öğretmen modu: *KAPALI*",
-    teacher_usage: "Kullanım: `/teacher on|off`",
+    teacher_on: "🎓 Öğretmen modu <b>açıldı</b>. Adım adım öğretiyorum.",
+    teacher_off: "🎓 Öğretmen modu <b>kapatıldı</b>. Asistana dön.",
+    teacher_status_on: "🎓 Öğretmen modu: <b>AÇIK</b>",
+    teacher_status_off: "🎓 Öğretmen modu: <b>KAPALI</b>",
+    teacher_usage: "Kullanım: <i>[/teacher on|off]</i>",
 
-    menu_header: "🎓 *ANUBIS — Sesli Öğretmen*\nSeçin:",
+    menu_header: "🎓 <b>ANUBIS — Sesli Öğretmen</b>\nSeçin:",
     btn_ask: "🧠 Sor",
     btn_speak: "🔊 Konuş",
     btn_voices: "🎙 Sesler",
@@ -355,13 +364,14 @@ static TR: Strings = Strings {
 
     loading_think: "🧠 Düşünüyorum…",
 
-    voices_header: "🎙 *Mevcut Sesler*\n\nSeçmek için bir sese dokunun:",
+    voices_header: "🎙 <b>Mevcut Sesler</b>\n\nSeçmek için bir sese dokunun:",
     listen_hint: "🔊 Dinlemek için sese dokunun",
+    unknown_command: "❓ <b>Bilinmeyen komut.</b> Yapabildiklerim:",
 };
 
 static PT: Strings = Strings {
-    welcome: "🎓 *ANUBIS — Professor de Voz*\n\nSeu professor de idiomas IA multilíngue.\n\n• Faça perguntas em qualquer idioma\n• Ouça seu professor falar\n• Aprenda inglês, árabe, italiano e mais\n• Modo professor: exercícios, feedback, diálogo socrático\n\n👇 Escolha seu idioma para começar:",
-    help: "*Comandos*\n\n/ask `<texto>` — Pergunte ao professor\n/speak `<texto>` — Ouça a fala\n/voices — Escolha uma voz\n/lang — Mude o idioma\n/teacher `on|off` — Modo professor\n/reset — Resetar conversa\n\n💡 Ou toque em um botão abaixo!",
+    welcome: "🎓 <b>ANUBIS — Professor de Voz</b>\n\nSeu professor de idiomas IA multilíngue.\n\n• Faça perguntas em qualquer idioma\n• Ouça seu professor falar\n• Aprenda inglês, árabe, italiano e mais\n• Modo professor: exercícios, feedback, diálogo socrático\n\n👇 Escolha seu idioma para começar:",
+    help: "<b>Comandos</b>\n\n/ask <i>[<texto>]</i> — Pergunte ao professor\n/speak <i>[<texto>]</i> — Ouça a fala\n/voices — Escolha uma voz\n/lang — Mude o idioma\n/teacher <i>[on|off]</i> — Modo professor\n/reset — Resetar conversa\n\n💡 Ou toque em um botão abaixo!",
     choose_lang: "🌐 Selecione seu idioma:",
     lang_set: "✅ Idioma atualizado.",
     voice_set: "✅ Voz definida.",
@@ -372,13 +382,13 @@ static PT: Strings = Strings {
     reset_done: "🧠 Memória de conversa apagada.",
     no_voice_data: "ℹ️ Nenhuma resposta para ouvir. Pergunte com /ask.",
 
-    teacher_on: "🎓 Modo professor *ativado*. Ensino passo a passo.",
-    teacher_off: "🎓 Modo professor *desativado*. Voltando ao assistente.",
-    teacher_status_on: "🎓 Modo professor: *ON*",
-    teacher_status_off: "🎓 Modo professor: *OFF*",
-    teacher_usage: "Uso: `/teacher on|off`",
+    teacher_on: "🎓 Modo professor <b>ativado</b>. Ensino passo a passo.",
+    teacher_off: "🎓 Modo professor <b>desativado</b>. Voltando ao assistente.",
+    teacher_status_on: "🎓 Modo professor: <b>ON</b>",
+    teacher_status_off: "🎓 Modo professor: <b>OFF</b>",
+    teacher_usage: "Uso: <i>[/teacher on|off]</i>",
 
-    menu_header: "🎓 *ANUBIS — Professor de Voz*\nEscolha:",
+    menu_header: "🎓 <b>ANUBIS — Professor de Voz</b>\nEscolha:",
     btn_ask: "🧠 Perguntar",
     btn_speak: "🔊 Falar",
     btn_voices: "🎙 Vozes",
@@ -389,8 +399,9 @@ static PT: Strings = Strings {
 
     loading_think: "🧠 Pensando…",
 
-    voices_header: "🎙 *Vozes Disponíveis*\n\nToque para selecionar uma voz:",
+    voices_header: "🎙 <b>Vozes Disponíveis</b>\n\nToque para selecionar uma voz:",
     listen_hint: "🔊 Toque para ouvir",
+    unknown_command: "❓ <b>Comando desconhecido.</b> Aqui está o que posso fazer:",
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

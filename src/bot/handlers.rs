@@ -2,14 +2,14 @@
 //!
 //! ANUBIS Voice Teacher — the user-facing surface is intentionally small and
 //! focused: ask your teacher, hear it speak, pick a voice + language, and
-//! toggle teacher mode. No payments, no cloning, no marketplace, no stats.
+//! toggle teacher mode.
 
 use super::{keyboards, AppState, PendingAction, PromptKind};
 use crate::bot::commands::Command;
 use crate::i18n;
 use crate::tts::voices;
 use teloxide::prelude::*;
-use teloxide::types::{InputFile, Message, ParseMode};
+use teloxide::types::{InputFile, Message};
 use tracing::warn;
 
 /// Entry point for a parsed command.
@@ -32,8 +32,8 @@ pub async fn handle_command(
     Ok(())
 }
 
-/// Entry point for a plain text message. If the bot is awaiting a free-form
-/// prompt (tap-from-menu flow), route it; otherwise ask the teacher.
+/// Entry point for a plain text message. Unknown slash commands get a
+/// "command not found" reply; otherwise text goes to the teacher.
 pub async fn handle_message(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()> {
     let user_id = msg.from().map(|u| u.id.0 as i64).unwrap_or(0);
 
@@ -59,12 +59,22 @@ pub async fn handle_message(bot: Bot, msg: Message, st: AppState) -> anyhow::Res
         }
     }
 
-    // Otherwise treat plain text as a question to the teacher.
     if let Some(text) = msg.text() {
         let trimmed = text.trim();
-        if !trimmed.is_empty() {
-            do_ask(&bot, &msg, &st, trimmed).await?;
+        if trimmed.is_empty() {
+            return Ok(());
         }
+
+        // Unknown slash commands → show help instead of sending to LLM
+        if trimmed.starts_with('/') {
+            let lang = st.db.user_lang(user_id);
+            let s = i18n::get(&lang);
+            bot.send_message(msg.chat.id, s.unknown_command).await?;
+            bot.send_message(msg.chat.id, s.help).await?;
+            return Ok(());
+        }
+
+        do_ask(&bot, &msg, &st, trimmed).await?;
     }
     Ok(())
 }
@@ -125,7 +135,6 @@ pub async fn handle_callback(bot: Bot, q: CallbackQuery, st: AppState) -> anyhow
             if let (Some(cid), Some(mid)) = (chat, msg_id) {
                 bot.edit_message_text(cid, mid, s.menu_header)
                     .reply_markup(keyboards::main_menu(&lang))
-                    .parse_mode(ParseMode::MarkdownV2)
                     .await?;
             }
         }
@@ -161,7 +170,6 @@ pub async fn handle_callback(bot: Bot, q: CallbackQuery, st: AppState) -> anyhow
                     let active = st.db.active_voice(user_id);
                     bot.send_message(cid, s.voices_header)
                         .reply_markup(keyboards::voices_keyboard(&lang, &active))
-                        .parse_mode(ParseMode::MarkdownV2)
                         .await?;
                 }
             }
@@ -182,9 +190,7 @@ pub async fn handle_callback(bot: Bot, q: CallbackQuery, st: AppState) -> anyhow
             }
             "help" => {
                 if let Some(cid) = chat {
-                    bot.send_message(cid, s.help)
-                        .parse_mode(ParseMode::MarkdownV2)
-                        .await?;
+                    bot.send_message(cid, s.help).await?;
                 }
             }
             "reset" => {
@@ -211,7 +217,6 @@ async fn cmd_start(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()> {
     let s = i18n::get(&lang);
     bot.send_message(msg.chat.id, s.welcome)
         .reply_markup(keyboards::main_menu(&lang))
-        .parse_mode(ParseMode::MarkdownV2)
         .await?;
     bot.send_message(msg.chat.id, s.choose_lang)
         .reply_markup(keyboards::lang_keyboard())
@@ -222,9 +227,7 @@ async fn cmd_start(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()> {
 async fn cmd_help(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()> {
     let user_id = msg.from().map(|u| u.id.0 as i64).unwrap_or(0);
     let lang = st.db.user_lang(user_id);
-    bot.send_message(msg.chat.id, i18n::get(&lang).help)
-        .parse_mode(ParseMode::MarkdownV2)
-        .await?;
+    bot.send_message(msg.chat.id, i18n::get(&lang).help).await?;
     Ok(())
 }
 
@@ -258,7 +261,6 @@ async fn cmd_voices(bot: Bot, msg: Message, st: AppState) -> anyhow::Result<()> 
     let active = st.db.active_voice(user_id);
     bot.send_message(msg.chat.id, i18n::get(&lang).voices_header)
         .reply_markup(keyboards::voices_keyboard(&lang, &active))
-        .parse_mode(ParseMode::MarkdownV2)
         .await?;
     Ok(())
 }
